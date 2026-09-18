@@ -27,6 +27,7 @@ input:disabled, select:disabled, textarea:disabled { opacity:0.6; }
 
 .chips { display:flex; gap:8px; flex-wrap:wrap; }
 .chip { all:unset; padding:7px 13px; border-radius:999px; border:1px solid var(--line); font-size:12.5px; font-weight:600; cursor:pointer; background:var(--bg-raised); color:var(--ink); }
+.role-cat-chips .chip { padding:4px 8px; font-size:7.5px; }
 .chip.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
 .chip.status-lost.on { background:var(--rose); border-color:var(--rose); color:#fff; }
 
