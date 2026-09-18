@@ -10,7 +10,7 @@
 
 import { db } from "./firebase-init.js";
 import { state, CATEGORIES } from "./state.js";
-import { esc, moneyPlain } from "./utils.js";
+import { esc, moneyPlain, wireNumberStepper } from "./utils.js";
 import { openConfirm } from "./modals.js";
 
 export function subscribeAdminCatalogs(onChange) {
@@ -159,7 +159,7 @@ export function renderRateCard() {
       </div>`;
     return `<tr class="role-drag-item" draggable="true" data-id="${id}">
       <td><span style="display:flex; align-items:center; gap:8px;"><span class="sub" style="cursor:grab; user-select:none;">\u283f</span><input type="text" class="role-name" value="${esc(r.role)}"></span></td>
-      <td class="numc"><input type="number" class="role-rate" value="${r.rate}" min="0" step="1" style="text-align:right; width:calc(100% - 6px); margin-right:6px;"></td>
+      <td class="numc"><input type="number" class="role-rate" value="${r.rate}" min="0" step="1"></td>
       <td>${rows}</td>
       <td><button class="btn small danger role-del">\u2715</button></td>
     </tr>`;
@@ -171,6 +171,7 @@ export function renderRateCard() {
     const rateInput = tr.querySelector(".role-rate");
     nameInput.onchange = () => db.collection("rate_card").doc(id).update({ role: nameInput.value }).catch(() => {});
     rateInput.onchange = () => db.collection("rate_card").doc(id).update({ rate: Number(rateInput.value) || 0 }).catch(() => {});
+    wireNumberStepper(rateInput);
     tr.querySelector(".role-del").onclick = () => {
       openConfirm(
         "Delete this role?",
@@ -284,14 +285,14 @@ export function renderDisciplinesAdmin() {
             <th rowspan="2" style="width:30px;"></th>
           </tr>
           <tr>
-            ${applicableRoles.map((r) => `<th class="numc" style="width:22px;">${esc(r.role)}</th>`).join("")}
+            ${applicableRoles.map((r) => `<th class="numc" style="width:70px;">${esc(r.role)}</th>`).join("")}
           </tr>
         </thead>
         <tbody class="task-drag-list" data-disc-id="${id}">
           ${tasks.map(([tid, t]) => `<tr class="task-drag-item" draggable="true" data-item-id="${tid}">
             <td><span class="sub" style="cursor:grab; user-select:none;">\u283f</span> ${esc(t.task)}</td>
             <td></td>
-            ${applicableRoles.map((r) => `<td class="numc"><input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5" style="width:100%; text-align:right;"></td>`).join("")}
+            ${applicableRoles.map((r) => `<td class="numc"><input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5"></td>`).join("")}
             <td><button class="btn small danger disc-task-del" data-item-id="${tid}">\u2715</button></td>
           </tr>`).join("") || `<tr><td colspan="${colCount}" class="sub">No tasks yet.</td></tr>`}
         </tbody>
@@ -334,6 +335,7 @@ export function renderDisciplinesAdmin() {
         hoursByRole[input.dataset.role] = Number(input.value) || 0;
         db.collection("task_catalog").doc(input.dataset.itemId).update({ hoursByRole }).catch(() => {});
       };
+      wireNumberStepper(input);
     });
     row.querySelectorAll(".disc-task-del").forEach((btn) => {
       btn.onclick = () => {

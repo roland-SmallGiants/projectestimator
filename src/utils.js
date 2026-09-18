@@ -160,6 +160,35 @@ export function wireAutocomplete(inputEl, dropdownEl, getOptions, onSelect) {
   });
 }
 
+export function wireNumberStepper(input) {
+  if (!input || input.dataset.stepperWired) return;
+  input.dataset.stepperWired = "1";
+  const wrap = document.createElement("span");
+  wrap.className = "number-stepper";
+  const minus = document.createElement("button");
+  minus.type = "button"; minus.className = "number-stepper-btn"; minus.textContent = "\u2212";
+  const plus = document.createElement("button");
+  plus.type = "button"; plus.className = "number-stepper-btn"; plus.textContent = "+";
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(minus);
+  wrap.appendChild(input);
+  wrap.appendChild(plus);
+  const step = parseFloat(input.step) || 1;
+  const min = input.min !== "" ? parseFloat(input.min) : -Infinity;
+  const max = input.max !== "" ? parseFloat(input.max) : Infinity;
+  const adjust = (delta) => {
+    if (input.disabled) return;
+    const current = parseFloat(input.value) || 0;
+    let next = current + delta;
+    if (next < min) next = min;
+    if (next > max) next = max;
+    input.value = next;
+    input.dispatchEvent(new Event("change"));
+  };
+  minus.onclick = () => adjust(-step);
+  plus.onclick = () => adjust(step);
+}
+
 export function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
