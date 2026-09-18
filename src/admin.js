@@ -258,14 +258,17 @@ export function renderDisciplinesAdmin() {
   const list = document.getElementById("disciplinesList");
   if (!list) return;
   const ids = Object.keys(state.disciplines).sort((a, b) => (state.disciplines[a].order ?? 0) - (state.disciplines[b].order ?? 0));
+  // Every discipline's table shows the SAME roles, in the SAME order, at the SAME
+  // width, so the columns line up consistently down the whole page. Roles that
+  // don't apply to a given discipline still get a column; the cell is just disabled.
+  const allRoles = Object.values(state.rateCard).filter((r) => r.role).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const ROLE_COL_WIDTH = 90; // matches the Rate Card's Hourly Rate column for a page-wide consistent look
 
   list.innerHTML = ids.map((id) => {
     const d = state.disciplines[id];
     const tasks = Object.entries(state.taskCatalog || {}).filter(([, t]) => t.category === d.name).sort((a, b) => (a[1].order ?? 0) - (b[1].order ?? 0));
-    const applicableRoles = Object.values(state.rateCard)
-      .filter((r) => r.role && (!Array.isArray(r.categories) || r.categories.length === 0 || r.categories.includes(d.name)))
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    const colCount = applicableRoles.length + 3;
+    const isApplicable = (r) => !Array.isArray(r.categories) || r.categories.length === 0 || r.categories.includes(d.name);
+    const colCount = allRoles.length + 3;
 
     return `<div class="discipline-row" data-id="${id}" style="border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
@@ -281,18 +284,23 @@ export function renderDisciplinesAdmin() {
           <tr>
             <th rowspan="2" style="width:30%;">Default tasks</th>
             <th rowspan="2"></th>
-            ${applicableRoles.length ? `<th class="numc sub" colspan="${applicableRoles.length}" style="font-weight:600; padding-bottom:2px;">Default Est. Hrs</th>` : ""}
+            ${allRoles.length ? `<th class="numc sub" colspan="${allRoles.length}" style="font-weight:600; padding-bottom:2px;">Default Est. Hrs</th>` : ""}
             <th rowspan="2" style="width:30px;"></th>
           </tr>
           <tr>
-            ${applicableRoles.map((r) => `<th class="numc" style="width:70px;">${esc(r.role)}</th>`).join("")}
+            ${allRoles.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px;">${esc(r.role)}</th>`).join("")}
           </tr>
         </thead>
         <tbody class="task-drag-list" data-disc-id="${id}">
           ${tasks.map(([tid, t]) => `<tr class="task-drag-item" draggable="true" data-item-id="${tid}">
             <td><span class="sub" style="cursor:grab; user-select:none;">\u283f</span> ${esc(t.task)}</td>
             <td></td>
-            ${applicableRoles.map((r) => `<td class="numc"><input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5"></td>`).join("")}
+            ${allRoles.map((r) => {
+              const applicable = isApplicable(r);
+              return `<td class="numc">${applicable
+                ? `<input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5">`
+                : `<input type="text" value="\u2014" disabled style="text-align:center;" title="${esc(r.role)} doesn't apply to ${esc(d.name)}">`}</td>`;
+            }).join("")}
             <td><button class="btn small danger disc-task-del" data-item-id="${tid}">\u2715</button></td>
           </tr>`).join("") || `<tr><td colspan="${colCount}" class="sub">No tasks yet.</td></tr>`}
         </tbody>
