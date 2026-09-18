@@ -1,0 +1,114 @@
+import { db } from "./firebase-init.js";
+import { state } from "./state.js";
+import { ensureModalRoot, openConfirm } from "./modals.js";
+import { initWelcomeScreen, renderWelcomeUserList, renderCurrentUserIndicator } from "./welcome.js";
+import {
+  subscribeDrafts, renderDraftsList, createDraft, tryLockDraft, startHeartbeat, releaseLock, subscribeDraftItems, unsubscribeDraftItems,
+} from "./drafts.js";
+import { renderEstimatorView, isReadOnly } from "./estimator.js";
+import { subscribeQuotes, saveCurrentDraftAsQuote, buildArchiveRowHtml, wireArchiveRows } from "./quotes.js";
+import { renderReport, wireChartToggle } from "./report.js";
+import {
+  subscribeAdminCatalogs, bootstrapDefaultsIfEmpty, renderAdminView, wireAddRole, wireAddDiscipline, wireTeamAdd,
+} from "./admin.js";
+import { setStatus, showView, wireNav } from "./nav.js";
+
+async function boot() {
+  ensureModalRoot();
+  await bootstrapDefaultsIfEmpty().catch((e) => setStatus("Setup error: " + e.message, true));
+
+  db.doc("settings/main").onSnapshot((snap) => {
+    if (snap.exists) state.settings = { ...state.settings, ...snap.data() };
+    renderWelcomeUserList();
+    renderCurrentUserIndicator();
+    if (document.getElementById("adminView").style.display !== "none") renderAdminView();
+    setStatus("Synced, shared live with your team.");
+  }, (e) => setStatus("Sync error (settings): " + e.code, true));
+
+  subscribeAdminCatalogs(() => {
+    if (state.currentDraftId) renderEstimatorView();
+    if (document.getElementById("adminView").style.display !== "none") renderAdminView();
+  });
+
+  subscribeDrafts(() => {
+    renderDraftsList();
+    if (state.currentDraftId && !state.drafts[state.currentDraftId]) {
+      // Someone else deleted or saved the draft we had open.
+      state.currentDraftId = null;
+      unsubscribeDraftItems();
+      showView("drafts");
+    } else if (state.currentDraftId) {
+      renderEstimatorView();
+    }
+  });
+
+  subscribeQuotes(() => {
+    if (document.getElementById("quotesView").style.display !== "none") renderQuotesView();
+    if (document.getElementById("reportView").style.display !== "none") renderReport();
+  });
+
+  initWelcomeScreen();
+  wireNav();
+  wireEstimatorActions();
+  wireDraftsActions();
+  wireChartToggle();
+  wireAddRole();
+  wireAddDiscipline();
+  wireTeamAdd();
+
+  window.addEventListener("open-draft", (e) => openDraft(e.detail.id));
+  window.addEventListener("beforeunload", () => { if (state.currentDraftId) releaseLock(state.currentDraftId); });
+}
+
+async function openDraft(id) {
+  if (state.currentDraftId && state.currentDraftId !== id) await releaseLock(state.currentDraftId);
+  const locked = await tryLockDraft(id);
+  state.currentDraftId = id;
+  subscribeDraftItems(id, () => renderEstimatorView());
+  if (locked) startHeartbeat(id);
+  showView("estimator");
+  renderEstimatorView();
+}
+
+function wireDraftsActions() {
+  document.getElementById("newDraftBtn").onclick = async () => {
+    const id = await createDraft("");
+    openDraft(id);
+  };
+}
+
+function wireEstimatorActions() {
+  document.getElementById("saveQuoteBtn").onclick = () => {
+    if (isReadOnly()) return;
+    openConfirm(
+      "Save this quote to the archive?",
+      "This saves a read-only copy to the Quote Archive and closes out this draft. This can't be undone from here.",
+      async () => { await saveCurrentDraftAsQuote(); showView("drafts"); },
+      "Yes, save"
+    );
+  };
+  document.getElementById("closeDraftBtn").onclick = async () => {
+    if (state.currentDraftId) await releaseLock(state.currentDraftId);
+    unsubscribeDraftItems();
+    state.currentDraftId = null;
+    showView("drafts");
+  };
+}
+
+function renderQuotesView() {
+  const wrap = document.getElementById("quoteArchiveList");
+  const query = (document.getElementById("quoteSearchInput").value || "").trim().toLowerCase();
+  let ids = Object.keys(state.quotes).sort((a, b) => new Date(state.quotes[b].savedAt) - new Date(state.quotes[a].savedAt));
+  if (query) ids = ids.filter((id) => (state.quotes[id].clientName || "").toLowerCase().includes(query));
+  wrap.innerHTML = ids.length ? ids.map((id) => buildArchiveRowHtml(id, false)).join("") : `<div class="task-empty">No quotes saved yet.</div>`;
+  wireArchiveRows(wrap, renderQuotesView);
+}
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("quoteSearchInput").addEventListener("input", renderQuotesView);
+});
+
+window.__renderQuotesView = renderQuotesView;
+window.__renderReport = renderReport;
+window.__renderAdminView = renderAdminView;
+
+boot();

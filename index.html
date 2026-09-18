@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Small Giants — Client Work Estimator</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+
+<div id="welcomeOverlay" class="modal-overlay" style="display:flex; z-index:100;">
+  <div class="modal-card" style="max-width:400px; text-align:center;">
+    <h2 style="margin-bottom:6px;">Who's working on this?</h2>
+    <div class="sub" style="margin-bottom:18px;">Pick your name to continue.</div>
+    <div id="welcomeUserList" style="display:flex; flex-direction:column; gap:10px;"></div>
+    <div id="welcomePinForm" style="display:none; margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);">
+      <div class="sub" style="margin-bottom:8px;">Enter the admin PIN to continue as Roland.</div>
+      <div style="display:flex; gap:8px; justify-content:center;">
+        <input type="password" id="welcomePinInput" placeholder="PIN" style="max-width:120px;" inputmode="numeric">
+        <button class="btn primary small" id="welcomePinSubmit">Unlock</button>
+      </div>
+      <div class="status err" id="welcomePinError" style="margin-top:6px;"></div>
+    </div>
+    <div style="margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);">
+      <button class="btn ghost small" id="welcomeAddPersonToggle">+ Add person</button>
+      <div id="welcomeAddPersonForm" style="display:none; gap:8px; margin-top:10px; justify-content:center;">
+        <input type="text" id="welcomeNewPersonInput" placeholder="Name" style="max-width:160px;">
+        <button class="btn primary small" id="welcomeNewPersonSubmit">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+    <div>
+      <h1>Client Work Estimator</h1>
+      <p>Shared with your team. Multiple quotes can be in progress at once — everyone sees the same drafts list.</p>
+      <div class="status" id="status">Connecting…</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+      <div class="sub" id="currentUserIndicator" style="margin:0;"></div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn ghost small" id="backToDraftsBtn" style="display:none;">← All drafts</button>
+        <button class="btn ghost small" id="quotesNavBtn">Quotes →</button>
+        <button class="btn ghost small" id="reportNavBtn">Report →</button>
+        <button class="btn ghost small" id="adminNavBtn" style="display:none;">Admin →</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Drafts list -->
+  <div id="draftsView">
+    <section class="card">
+      <h2>In-progress quotes</h2>
+      <div class="sub">Anyone can open any draft. Only one person edits a given draft at a time — others see it read-only while it's open.</div>
+      <div id="draftsList" style="margin-top:14px;"></div>
+      <div class="row-actions" style="margin-top:14px;">
+        <button class="btn primary" id="newDraftBtn">+ Start a new quote</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Estimator -->
+  <div id="estimatorView" style="display:none;">
+    <div id="lockBanner" class="status err" style="display:none; margin-bottom:14px; padding:10px; border-radius:8px; background:color-mix(in srgb, var(--rose) 12%, transparent);"></div>
+    <div class="top-row" style="display:grid; grid-template-columns:60% 1fr; gap:20px;">
+      <section class="card">
+        <h2>Client</h2>
+        <div class="sub">Which client is this quote for?</div>
+        <div style="margin-top:10px;">
+          <input type="text" id="clientNameInput" placeholder="Client name" style="max-width:220px;">
+        </div>
+        <div style="margin-top:12px;">
+          <label class="sub" style="display:block; margin-bottom:4px;">Project description</label>
+          <textarea id="projectDescriptionInput" placeholder="A short description of this project…" rows="2" style="width:100%; font-family:inherit; font-size:13px; padding:7px 9px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); resize:vertical;"></textarea>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Scope</h2>
+        <div class="sub">Pick the discipline(s) for this work.</div>
+        <div class="chips small" id="disciplineModeChips" style="margin-top:8px;">
+          <button type="button" class="chip" data-mode="single">1 discipline</button>
+          <button type="button" class="chip" data-mode="multiple">Multiple disciplines</button>
+        </div>
+        <div class="chips" id="disciplineChips" style="margin-top:10px;"></div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:20px;">
+      <h2>Summary</h2>
+      <table class="summary-style-table">
+        <thead><tr><th>Category</th><th class="numc" style="width:110px">Est. Hours</th><th class="num" style="width:120px">Est. Cost (€)</th></tr></thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card" style="margin-top:20px;">
+      <h2>Work breakdown</h2>
+      <div class="chips" id="itemTabs" style="margin-bottom:10px;"></div>
+      <table style="table-layout:fixed; width:100%;">
+        <thead><tr>
+          <th style="width:32%">Task</th><th class="numc" style="width:8%">Qty</th>
+          <th style="width:20%">Role <select id="bulkRoleSelect" style="margin-left:6px; font-size:11px;"></select></th>
+          <th class="numc" style="width:9%">Hours</th><th class="num" style="width:11%">Cost (€)</th>
+          <th style="width:16%">Notes</th><th style="width:4%"></th>
+        </tr></thead>
+        <tbody id="itemsBody"></tbody>
+      </table>
+      <div class="row-actions"><button class="btn ghost small" id="addItem">+ Add a custom task</button></div>
+    </section>
+
+    <div style="height:70px;"></div>
+    <div id="saveQuoteFloatBar" style="position:fixed; right:24px; bottom:24px; display:flex; gap:10px; z-index:30;">
+      <button class="btn ghost" id="closeDraftBtn">Close (keep as draft)</button>
+      <button class="btn primary" id="saveQuoteBtn" style="font-size:15px; padding:14px 26px; box-shadow:0 4px 14px rgba(0,0,0,0.18);">Save to archive</button>
+    </div>
+  </div>
+
+  <!-- Quotes archive -->
+  <div id="quotesView" style="display:none;">
+    <section class="card">
+      <h2>Quote Archive</h2>
+      <div class="sub">Read-only past quotes.</div>
+      <input type="text" id="quoteSearchInput" placeholder="Filter by client name…" style="margin-top:10px; max-width:260px;">
+    </section>
+    <div id="quoteArchiveList" style="display:flex; flex-direction:column; gap:10px; margin-top:16px;"></div>
+  </div>
+
+  <!-- Report -->
+  <div id="reportView" style="display:none;">
+    <section class="card">
+      <h2>Report</h2>
+      <div class="sub">Every saved quote, sorted by outcome. Mark a quote Won or Lost from the Quotes page.</div>
+    </section>
+    <section class="card">
+      <h2 style="font-size:15px;">What's changed</h2>
+      <div class="sub">A quick read on this month vs. recent history, refreshed whenever you open this page.</div>
+      <div id="reportInsights" style="margin-top:12px;"></div>
+    </section>
+    <section class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+        <div><h2 style="font-size:15px;">Revenue by month</h2><div class="sub" id="reportChartSub"></div></div>
+        <div class="chips small" id="reportChartTypeToggle">
+          <button type="button" class="chip on" data-type="grouped">Grouped</button>
+          <button type="button" class="chip" data-type="stacked">Stacked</button>
+          <button type="button" class="chip" data-type="percent">100%</button>
+        </div>
+      </div>
+      <div id="reportChartContainer" style="margin-top:14px;"></div>
+    </section>
+    <div class="report-columns" id="reportColumns" style="display:grid; grid-template-columns:1fr; gap:20px;"></div>
+  </div>
+
+  <!-- Admin -->
+  <div id="adminView" style="display:none;">
+    <section class="card"><h2>Admin</h2><div class="sub">Rates, disciplines, pricing, and team — separate from day-to-day estimating.</div></section>
+
+    <section class="card">
+      <h2>Rate Card</h2>
+      <table><thead><tr><th>Role</th><th class="numc">Hourly Rate (€)</th><th></th></tr></thead><tbody id="rateCardBody"></tbody></table>
+      <div class="row-actions"><button class="btn ghost small" id="addRole">+ Add role</button></div>
+    </section>
+
+    <section class="card">
+      <h2>Disciplines</h2>
+      <div class="sub">Add, rename, or remove disciplines and their default task catalog.</div>
+      <div id="disciplinesList" style="margin-top:12px;"></div>
+      <div class="row-actions"><button class="btn ghost small" id="addDiscipline">+ Add discipline</button></div>
+    </section>
+
+    <section class="card">
+      <h2>Pricing</h2>
+      <div class="sub">Contingency / margin applied to every estimate's final price.</div>
+      <div style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+        <input type="number" id="contingencyInput" min="0" step="1" style="max-width:100px; text-align:center;"><span class="sub">%</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Team</h2>
+      <div class="sub">Who can identify themselves on the welcome screen. Roland can't be removed.</div>
+      <div id="teamList" style="margin-top:12px;"></div>
+      <div class="row-actions" style="margin-top:12px;">
+        <input type="text" id="teamNewPersonInput" placeholder="Name" style="max-width:160px;">
+        <button class="btn ghost small" id="teamNewPersonSubmit">+ Add person</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script type="module" src="src/app.js"></script>
+</body>
+</html>

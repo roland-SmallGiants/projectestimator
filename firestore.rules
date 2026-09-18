@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// This app has no real authentication (identity is a shared team convention,
+// not a login) — the same trust model as the original Claude Artifact
+// version. These rules simply mean "only this app's project can read/write
+// this data" rather than enforcing per-person permissions, since there's no
+// user account system to check against.
+//
+// If real access control ever matters (e.g. this becomes reachable by
+// people outside the team), add Firebase Authentication and tighten these
+// rules to check `request.auth` — that's a meaningfully bigger change than
+// anything else in this rebuild and shouldn't be treated as an afterthought
+// if/when it's needed.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
