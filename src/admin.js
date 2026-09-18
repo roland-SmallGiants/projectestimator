@@ -278,16 +278,13 @@ export function renderDisciplinesAdmin() {
       <table class="task-hours-table" style="table-layout:fixed; width:100%; max-width:100%; margin-top:10px; font-size:12.5px;">
         <thead>
           <tr>
-            <th style="width:30%;"></th>
-            <th></th>
+            <th rowspan="2" style="width:30%;">Default tasks</th>
+            <th rowspan="2"></th>
             ${applicableRoles.length ? `<th class="numc sub" colspan="${applicableRoles.length}" style="font-weight:600; padding-bottom:2px;">Default Est. Hrs</th>` : ""}
-            <th style="width:30px;"></th>
+            <th rowspan="2" style="width:30px;"></th>
           </tr>
           <tr>
-            <th style="width:30%;">Default tasks</th>
-            <th></th>
-            ${applicableRoles.map((r) => `<th class="numc" style="width:45px;">${esc(r.role)}</th>`).join("")}
-            <th style="width:30px;"></th>
+            ${applicableRoles.map((r) => `<th class="numc" style="width:22px;">${esc(r.role)}</th>`).join("")}
           </tr>
         </thead>
         <tbody class="task-drag-list" data-disc-id="${id}">
