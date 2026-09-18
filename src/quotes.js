@@ -13,6 +13,45 @@ export function subscribeQuotes(onChange) {
   });
 }
 
+function summarizeQuoteChanges(oldQ, newSnap) {
+  const changes = [];
+  if ((oldQ.clientName || "") !== (newSnap.clientName || "")) changes.push("changed client name");
+  if ((oldQ.projectDescription || "") !== (newSnap.projectDescription || "")) changes.push("updated project description");
+
+  const oldDisciplines = new Set(oldQ.disciplines || []);
+  const newDisciplines = new Set(newSnap.disciplines || []);
+  const added = [...newDisciplines].filter((d) => !oldDisciplines.has(d));
+  const removed = [...oldDisciplines].filter((d) => !newDisciplines.has(d));
+  if (added.length) changes.push(`added ${added.join(", ")}`);
+  if (removed.length) changes.push(`removed ${removed.join(", ")}`);
+
+  const oldByKey = {};
+  (oldQ.items || []).forEach((it) => { oldByKey[`${it.category}::${it.task}`] = it; });
+  const newByKey = {};
+  (newSnap.items || []).forEach((it) => { newByKey[`${it.category}::${it.task}`] = it; });
+
+  let addedTasks = 0, removedTasks = 0, hoursChanged = 0, roleChanged = 0, notesChanged = 0;
+  Object.keys(newByKey).forEach((key) => {
+    const oldIt = oldByKey[key];
+    const newIt = newByKey[key];
+    if (!oldIt) { addedTasks++; return; }
+    if ((oldIt.hours || 0) !== (newIt.hours || 0)) hoursChanged++;
+    if ((oldIt.role || "") !== (newIt.role || "")) roleChanged++;
+    if ((oldIt.notes || "") !== (newIt.notes || "")) notesChanged++;
+  });
+  Object.keys(oldByKey).forEach((key) => { if (!newByKey[key]) removedTasks++; });
+
+  if (addedTasks) changes.push(`added ${addedTasks} task${addedTasks === 1 ? "" : "s"}`);
+  if (removedTasks) changes.push(`removed ${removedTasks} task${removedTasks === 1 ? "" : "s"}`);
+  if (hoursChanged) changes.push(`updated hours for ${hoursChanged} task${hoursChanged === 1 ? "" : "s"}`);
+  if (roleChanged) changes.push(`changed role${roleChanged === 1 ? "" : "s"} for ${roleChanged} task${roleChanged === 1 ? "" : "s"}`);
+  if (notesChanged) changes.push(`updated notes for ${notesChanged} task${notesChanged === 1 ? "" : "s"}`);
+
+  if (!changes.length) return "No changes detected";
+  const joined = changes.join(", ");
+  return joined.charAt(0).toUpperCase() + joined.slice(1);
+}
+
 export async function saveCurrentDraftAsQuote() {
   const snap = buildQuoteSnapshot();
   const draftId = state.currentDraftId;
@@ -22,12 +61,20 @@ export async function saveCurrentDraftAsQuote() {
   if (sourceQuoteId && state.quotes[sourceQuoteId]) {
     // This draft came from "Continue in Estimator" on an existing quote:
     // update that quote in place (keeping its original savedAt/createdBy/
-    // status) and stamp it as edited, rather than creating a duplicate.
+    // status), append to its edit history, rather than creating a duplicate.
+    const oldQ = state.quotes[sourceQuoteId];
     const { savedAt, ...snapWithoutSavedAt } = snap;
-    await db.collection("quotes").doc(sourceQuoteId).update({
-      ...snapWithoutSavedAt,
+    const newEntry = {
       editedAt: nowTimestamp(),
       editedBy: state.currentUser,
+      changeSummary: summarizeQuoteChanges(oldQ, snap),
+    };
+    const editHistory = [...(oldQ.editHistory || []), newEntry];
+    await db.collection("quotes").doc(sourceQuoteId).update({
+      ...snapWithoutSavedAt,
+      editedAt: newEntry.editedAt,
+      editedBy: newEntry.editedBy,
+      editHistory,
     }).catch(() => {});
   } else {
     await db.collection("quotes").add({ ...snap, createdBy: state.currentUser });
@@ -43,11 +90,33 @@ export async function saveCurrentDraftAsQuote() {
   state.currentDraftId = null;
 }
 
+function buildEditTimelineHtml(q, id) {
+  // Back-compat: quotes edited before editHistory existed only have a single
+  // editedAt/editedBy pair and no changeSummary.
+  const history = Array.isArray(q.editHistory) && q.editHistory.length
+    ? q.editHistory
+    : (q.editedAt ? [{ editedAt: q.editedAt, editedBy: q.editedBy, changeSummary: null }] : []);
+  if (!history.length) return "";
+
+  const sorted = [...history].sort((a, b) => new Date(b.editedAt) - new Date(a.editedAt));
+  const [latest, ...older] = sorted;
+  const isOpen = state.expandedEditHistory.has(id);
+
+  const itemHtml = (e) => `<div class="edit-timeline-item"><strong>${esc(e.editedBy || "Unknown")}</strong> \u2014 ${formatDateTime(e.editedAt)}${e.changeSummary ? ` <span class="sub">\u00b7</span> <span class="change-summary">${esc(e.changeSummary)}</span>` : ""}</div>`;
+
+  return `<div class="edit-timeline">
+    <div class="edit-timeline-item">
+      <strong>${esc(latest.editedBy || "Unknown")}</strong> \u2014 ${formatDateTime(latest.editedAt)}${latest.changeSummary ? ` <span class="sub">\u00b7</span> <span class="change-summary">${esc(latest.changeSummary)}</span>` : ""}
+      ${older.length ? `<a href="#" class="history-link archive-history-toggle" data-id="${id}">${isOpen ? "Hide history" : `View history (${older.length + 1})`}</a>` : ""}
+    </div>
+    ${older.length ? `<div class="edit-timeline-older ${isOpen ? "open" : ""}">${older.map(itemHtml).join("")}</div>` : ""}
+  </div>`;
+}
+
 export function buildArchiveRowHtml(id) {
   const q = state.quotes[id];
   if (!q) return "";
   const dateStr = formatDateTime(q.savedAt);
-  const editedStr = q.editedAt ? formatDateTime(q.editedAt) : "";
   const isOpen = state.openArchiveDetails.has(id);
 
   const perCat = {};
@@ -96,14 +165,14 @@ export function buildArchiveRowHtml(id) {
       </div>
       <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
         ${outcomeChips}
-        ${isOpen ? `<div style="display:flex; gap:10px;">
-          ${q.status === "won" || q.status === "lost" ? "" : `<button class="btn ghost small archive-load-estimator">Edit</button>`}
+        ${isOpen && q.status !== "won" && q.status !== "lost" ? `<div style="display:flex; gap:10px;">
+          <button class="btn ghost small archive-load-estimator">Edit</button>
           <button class="btn ghost small archive-delete" style="color:var(--rose);">Delete</button>
         </div>` : ""}
       </div>
     </div>
     <div class="archive-detail ${isOpen ? "open" : ""}">
-      ${editedStr ? `<div class="sub" style="margin-bottom:10px;">Edited ${editedStr}${q.editedBy ? ` by ${esc(q.editedBy)}` : ""}</div>` : ""}
+      ${buildEditTimelineHtml(q, id)}
       <table class="summary-style-table">
         <thead><tr><th>Category</th><th style="width:140px">Role</th><th class="numc" style="width:110px">Est. Hours</th><th class="num" style="width:120px">Est. Cost (\u20ac)</th></tr></thead>
         <tbody>${catRows}<tr class="summary-row final"><td>Final quoted price</td><td></td><td class="numc">${q.grandHours.toLocaleString("nl-NL")}</td><td class="num">${moneyPlain(q.finalPrice)}</td></tr></tbody>
@@ -121,6 +190,16 @@ export function wireArchiveRows(wrap, rerender) {
       rerender();
     };
   });
+  wrap.querySelectorAll(".archive-history-toggle").forEach((el) => {
+    el.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = el.dataset.id;
+      if (state.expandedEditHistory.has(id)) state.expandedEditHistory.delete(id);
+      else state.expandedEditHistory.add(id);
+      rerender();
+    };
+  });
   wrap.querySelectorAll(".archive-cat-row").forEach((tr) => {
     tr.onclick = () => {
       const key = tr.dataset.key;
@@ -132,6 +211,8 @@ export function wireArchiveRows(wrap, rerender) {
   wrap.querySelectorAll(".archive-delete").forEach((btn) => {
     btn.onclick = () => {
       const id = btn.closest(".archive-row").dataset.id;
+      const q = state.quotes[id];
+      if (q && (q.status === "won" || q.status === "lost")) return; // Won/Lost quotes are locked from deletion.
       openConfirm("Delete this quote?", "This permanently deletes the archived quote. This can't be undone.",
         async () => { await db.collection("quotes").doc(id).delete().catch(() => {}); });
     };

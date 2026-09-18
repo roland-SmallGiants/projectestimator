@@ -22,6 +22,7 @@ export const state = {
   expandedSummaryCategories: new Set(),
   expandedHoursComparisonTasks: new Set(),
   expandedArchiveCategories: new Set(),
+  expandedEditHistory: new Set(),
   openArchiveDetails: new Set(),
   reportChartType: "grouped",
   reportMonthOverrides: {},
