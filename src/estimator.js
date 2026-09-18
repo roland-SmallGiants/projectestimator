@@ -60,6 +60,8 @@ export function renderDisciplineSelector() {
   wrap.style.display = d.disciplineMode ? "" : "none";
   const divider = document.getElementById("disciplineDivider");
   if (divider) divider.style.display = d.disciplineMode ? "" : "none";
+  const label = document.getElementById("disciplineChipsLabel");
+  if (label) label.style.display = d.disciplineMode ? "" : "none";
   wrap.innerHTML = CATEGORIES().map((c) =>
     `<button type="button" class="chip ${selected.includes(c) ? "on" : ""}" data-cat="${esc(c)}" ${ro ? "disabled" : ""}>${esc(c)}</button>`
   ).join("");
