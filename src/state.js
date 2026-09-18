@@ -20,6 +20,7 @@ export const state = {
 
   activeTab: null,          // active discipline tab in the estimator
   expandedSummaryCategories: new Set(),
+  expandedHoursComparisonTasks: new Set(),
   editingQuotes: new Set(),
   editBuffers: {},
   expandedArchiveCategories: new Set(),

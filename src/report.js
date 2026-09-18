@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { esc, money, computeNiceAxis, formatAxisValue } from "./utils.js";
+import { esc, money, computeNiceAxis, formatAxisValue, formatDate } from "./utils.js";
 import { buildArchiveRowHtml, wireArchiveRows } from "./quotes.js";
 
 export function computeMonthlyRevenueData() {
@@ -227,8 +227,72 @@ export function renderReportColumns() {
   wireArchiveRows(wrap, renderReportColumns);
 }
 
+export function computeTaskHoursComparison() {
+  const rows = {}; // "category::task" -> { category, task, defaultHours, entries: [{clientName, hours, savedAt}] }
+
+  // Seed with the current task catalog so tasks with no usage yet still show their default.
+  Object.values(state.taskCatalog || {}).forEach((t) => {
+    const key = `${t.category}::${t.task}`;
+    rows[key] = { category: t.category, task: t.task, defaultHours: t.defaultHours || 0, entries: [] };
+  });
+
+  Object.values(state.quotes).forEach((q) => {
+    (q.items || []).forEach((it) => {
+      if (!it.role || !(Number(it.hours) > 0)) return; // only tasks actually worked (assigned + hours > 0)
+      const key = `${it.category}::${it.task}`;
+      if (!rows[key]) rows[key] = { category: it.category, task: it.task, defaultHours: 0, entries: [] };
+      rows[key].entries.push({ clientName: q.clientName, hours: Number(it.hours), savedAt: q.savedAt });
+    });
+  });
+
+  return Object.values(rows).sort((a, b) => a.category.localeCompare(b.category) || a.task.localeCompare(b.task));
+}
+
+export function renderHoursComparison() {
+  const body = document.getElementById("hoursComparisonBody");
+  if (!body) return;
+  const rows = computeTaskHoursComparison();
+  if (!rows.length) { body.innerHTML = `<tr><td colspan="5" class="task-empty">No tasks yet.</td></tr>`; return; }
+
+  body.innerHTML = rows.map((r) => {
+    const key = `${r.category}::${r.task}`;
+    const isOpen = state.expandedHoursComparisonTasks.has(key);
+    const hasEntries = r.entries.length > 0;
+    const avgActual = hasEntries ? r.entries.reduce((s, e) => s + e.hours, 0) / r.entries.length : null;
+    const variance = avgActual !== null ? avgActual - r.defaultHours : null;
+    const varianceStr = variance === null ? "\u2014" : (variance > 0 ? "+" : "") + variance.toLocaleString("nl-NL", { maximumFractionDigits: 1 });
+    const varianceColor = variance === null ? "var(--ink-soft)" : variance > 0 ? "var(--rose)" : variance < 0 ? "var(--accent)" : "var(--ink-soft)";
+
+    const mainRow = `<tr class="summary-cat-row hours-comparison-row" data-key="${esc(key)}" style="cursor:${hasEntries ? "pointer" : "default"};">
+      <td><span style="display:inline-block; width:14px;">${hasEntries ? (isOpen ? "\u25be" : "\u25b8") : ""}</span>${esc(r.task)} <span class="sub">(${esc(r.category)})</span></td>
+      <td class="numc">${r.defaultHours.toLocaleString("nl-NL")}</td>
+      <td class="numc">${avgActual === null ? "\u2014" : avgActual.toLocaleString("nl-NL", { maximumFractionDigits: 1 })}</td>
+      <td class="numc">${r.entries.length}</td>
+      <td class="numc" style="color:${varianceColor};">${varianceStr}</td>
+    </tr>`;
+    if (!isOpen || !hasEntries) return mainRow;
+    const detailRows = r.entries.map((e) => `<tr class="summary-task-row">
+        <td style="padding-left:26px; font-size:12.5px; color:var(--ink-soft);">${esc(e.clientName || "(no client name)")} \u00b7 ${formatDate(e.savedAt)}</td>
+        <td class="numc" style="font-size:12.5px; color:var(--ink-soft);">${r.defaultHours.toLocaleString("nl-NL")}</td>
+        <td class="numc" style="font-size:12.5px; color:var(--ink-soft);">${e.hours.toLocaleString("nl-NL")}</td>
+        <td></td><td></td>
+      </tr>`).join("");
+    return mainRow + detailRows;
+  }).join("");
+
+  body.querySelectorAll(".hours-comparison-row").forEach((tr) => {
+    tr.onclick = () => {
+      const key = tr.dataset.key;
+      if (state.expandedHoursComparisonTasks.has(key)) state.expandedHoursComparisonTasks.delete(key);
+      else state.expandedHoursComparisonTasks.add(key);
+      renderHoursComparison();
+    };
+  });
+}
+
 export function renderReport() {
   renderReportInsights();
   renderReportChart();
   renderReportColumns();
+  renderHoursComparison();
 }

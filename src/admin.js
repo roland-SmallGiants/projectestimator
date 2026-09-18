@@ -38,9 +38,59 @@ export async function bootstrapDefaultsIfEmpty() {
   const discSnap = await db.collection("disciplines").get();
   if (discSnap.docs.length) return; // already seeded
 
-  const defaults = ["Tracking Implementation", "Pipeline Migration", "Dashboard Build", "Data Audit", "AI & Analysis Pilot", "Other"];
+  const tasksByCategory = {
+    "Tracking Implementation": [
+      ["Kickoff call & requirements gathering", 2],
+      ["GTM container setup & configuration", 4],
+      ["Event implementation (per platform)", 8],
+      ["QA in GA4 DebugView", 4],
+      ["Cross-browser / device testing", 3],
+      ["Client review & sign-off", 2],
+      ["Go-live support", 2],
+      ["Post-launch monitoring (7 days)", 3],
+    ],
+    "Pipeline Migration": [
+      ["Current state documentation", 4],
+      ["Solution design (proposed state)", 6],
+      ["Build & staging migration", 12],
+      ["Data parity validation", 6],
+      ["Rollback plan & testing", 3],
+      ["Cutover execution", 4],
+      ["Post-cutover monitoring", 3],
+    ],
+    "Dashboard Build": [
+      ["Data source mapping", 3],
+      ["Data modeling (SQL)", 8],
+      ["Dashboard build", 12],
+      ["Client review rounds", 4],
+      ["QA & handoff", 3],
+    ],
+    "Data Audit": [
+      ["Tracking coverage review", 4],
+      ["Pipeline reliability review", 3],
+      ["Cost center & vendor review", 3],
+      ["Ownership & documentation review", 2],
+      ["Access & permissions review", 2],
+      ["Findings report & presentation", 4],
+    ],
+    "AI & Analysis Pilot": [
+      ["Discovery & hypothesis definition", 4],
+      ["Data readiness assessment", 4],
+      ["Model / analysis build", 12],
+      ["Validation", 4],
+      ["Presentation of findings", 3],
+    ],
+    "Other": [],
+  };
+  const defaults = Object.keys(tasksByCategory);
   for (let i = 0; i < defaults.length; i++) {
     await db.collection("disciplines").add({ name: defaults[i], order: i });
+  }
+  for (const [category, tasks] of Object.entries(tasksByCategory)) {
+    for (let i = 0; i < tasks.length; i++) {
+      const [task, defaultHours] = tasks[i];
+      await db.collection("task_catalog").add({ category, task, defaultHours, order: i });
+    }
   }
   const roles = [
     { role: "Tracking Specialist", rate: 115 },
@@ -98,6 +148,52 @@ export function wireAddRole() {
 
 // ---- Disciplines + task catalog ----
 
+let draggedTaskId = null;
+
+function wireTaskDragAndDrop(listEl) {
+  if (!listEl) return;
+  listEl.querySelectorAll(".task-drag-item").forEach((li) => {
+    li.addEventListener("dragstart", () => {
+      draggedTaskId = li.dataset.itemId;
+      li.style.opacity = "0.4";
+    });
+    li.addEventListener("dragend", () => {
+      li.style.opacity = "";
+      draggedTaskId = null;
+    });
+    li.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      if (!draggedTaskId || li.dataset.itemId === draggedTaskId) return;
+      const draggedEl = listEl.querySelector(`[data-item-id="${draggedTaskId}"]`);
+      if (!draggedEl) return;
+      const rect = li.getBoundingClientRect();
+      const before = (e.clientY - rect.top) < rect.height / 2;
+      li.parentNode.insertBefore(draggedEl, before ? li : li.nextSibling);
+    });
+    li.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      await persistTaskOrder(listEl);
+    });
+  });
+}
+
+async function persistTaskOrder(listEl) {
+  const ids = [...listEl.querySelectorAll(".task-drag-item")].map((li) => li.dataset.itemId);
+  const itemsSnap = await db.collection("draft_items").get();
+  for (let i = 0; i < ids.length; i++) {
+    const tid = ids[i];
+    const t = state.taskCatalog[tid];
+    if (!t || t.order === i) continue;
+    await db.collection("task_catalog").doc(tid).update({ order: i }).catch(() => {});
+    for (const doc of itemsSnap.docs) {
+      const it = doc.data();
+      if (it.category === t.category && it.task === t.task) {
+        await db.collection("draft_items").doc(doc.id).update({ order: i }).catch(() => {});
+      }
+    }
+  }
+}
+
 export function renderDisciplinesAdmin() {
   const list = document.getElementById("disciplinesList");
   if (!list) return;
@@ -105,16 +201,16 @@ export function renderDisciplinesAdmin() {
 
   list.innerHTML = ids.map((id) => {
     const d = state.disciplines[id];
-    const tasks = Object.entries(state.taskCatalog || {}).filter(([, t]) => t.category === d.name);
+    const tasks = Object.entries(state.taskCatalog || {}).filter(([, t]) => t.category === d.name).sort((a, b) => (a[1].order ?? 0) - (b[1].order ?? 0));
     return `<div class="discipline-row" data-id="${id}" style="border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
         <input type="text" class="disc-name" value="${esc(d.name)}" style="font-weight:700; max-width:260px;">
         <button class="btn small danger disc-del">\u2715</button>
       </div>
       <div class="sub" style="margin-top:8px;">Default tasks</div>
-      <ul style="list-style:none; padding:0; margin:6px 0;">
-        ${tasks.map(([tid, t]) => `<li data-item-id="${tid}" style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--line);">
-          <span>${esc(t.task)}</span>
+      <ul class="task-drag-list" data-disc-id="${id}" style="list-style:none; padding:0; margin:6px 0;">
+        ${tasks.map(([tid, t]) => `<li class="task-drag-item" draggable="true" data-item-id="${tid}" style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); cursor:grab;">
+          <span style="display:flex; align-items:center; gap:8px;"><span class="sub" style="cursor:grab; user-select:none;">\u283f</span>${esc(t.task)}</span>
           <span style="display:flex; align-items:center; gap:8px;">
             <span class="sub">Default hrs</span>
             <input type="number" class="task-default-hours" data-item-id="${tid}" value="${t.defaultHours || 0}" min="0" step="0.5" style="width:60px;">
@@ -151,6 +247,7 @@ export function renderDisciplinesAdmin() {
         );
       };
     });
+    wireTaskDragAndDrop(row.querySelector(".task-drag-list"));
     row.querySelector(".add-task-btn").onclick = async () => {
       const input = row.querySelector(".new-task-name");
       const name = input.value.trim();

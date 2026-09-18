@@ -150,6 +150,20 @@
       </div>
       <div id="reportChartContainer" style="margin-top:14px;"></div>
     </section>
+    <section class="card">
+      <h2 style="font-size:15px;">Default vs. actual hours</h2>
+      <div class="sub">Each task's default estimate next to what was actually used across saved quotes. Expand a task to see the breakdown by client.</div>
+      <table class="summary-style-table" style="margin-top:12px;">
+        <thead><tr>
+          <th>Task</th>
+          <th class="numc" style="width:110px">Default hrs</th>
+          <th class="numc" style="width:110px">Avg actual</th>
+          <th class="numc" style="width:90px">Quotes</th>
+          <th class="numc" style="width:100px">Variance</th>
+        </tr></thead>
+        <tbody id="hoursComparisonBody"></tbody>
+      </table>
+    </section>
     <div class="report-columns" id="reportColumns" style="display:grid; grid-template-columns:1fr; gap:20px;"></div>
   </div>
 

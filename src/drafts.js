@@ -182,7 +182,7 @@ export async function seedDraftItemsForDiscipline(draftId, categoryName, taskCat
       draftId, category: categoryName, task: t.task, role: "",
       hours: t.defaultHours || 0, qty: 1, notes: "",
       defaultHours: t.defaultHours || 0, hoursOverridden: false,
-      excluded: false, custom: false,
+      excluded: false, custom: false, order: t.order ?? 0,
     }).catch(() => {});
   }
 }

@@ -98,7 +98,8 @@ export function renderItems() {
   const body = document.getElementById("itemsBody");
   if (!body || !state.activeTab) { if (body) body.innerHTML = ""; return; }
   const items = Object.entries(state.draftItems)
-    .filter(([, it]) => it.category === state.activeTab && !it.excluded);
+    .filter(([, it]) => it.category === state.activeTab && !it.excluded)
+    .sort((a, b) => (a[1].order ?? 0) - (b[1].order ?? 0));
   const roleOptions = sortedRateIds().map((id) => state.rateCard[id].role).filter(Boolean);
 
   body.innerHTML = items.map(([id, it]) => {
@@ -160,7 +161,7 @@ export function renderSummary() {
 
   let grandHours = 0, grandCost = 0;
   const rows = selected.map((c) => {
-    const items = Object.entries(state.draftItems).filter(([, it]) => it.category === c && !it.excluded && it.role && (Number(it.hours) || 0) > 0);
+    const items = Object.entries(state.draftItems).filter(([, it]) => it.category === c && !it.excluded && it.role && (Number(it.hours) || 0) > 0).sort((a, b) => (a[1].order ?? 0) - (b[1].order ?? 0));
     const hours = items.reduce((s, [, it]) => s + effectiveHours(it), 0);
     const cost = items.reduce((s, [, it]) => s + effectiveHours(it) * rateForRole(it.role), 0);
     grandHours += hours; grandCost += cost;
