@@ -334,12 +334,20 @@ export function renderHoursComparison() {
         <td class="numc">${buildDeviationBar(variancePct, varianceColor)}</td>
       </tr>`;
       if (!isOpen) return mainRow;
-      const detailRows = r.entries.map((e) => `<tr class="summary-task-row">
+      const detailRows = r.entries.map((e) => {
+        const entryVariance = e.hours - r.defaultHours;
+        const entryVariancePct = r.defaultHours > 0 ? (entryVariance / r.defaultHours) * 100 : null;
+        const entryVarianceColor = entryVariance > 0 ? "var(--rose)" : entryVariance < 0 ? "var(--accent)" : "var(--ink-soft)";
+        const entryVarianceStr = (entryVariance > 0 ? "+" : "") + entryVariance.toLocaleString("nl-NL", { maximumFractionDigits: 1 });
+        return `<tr class="summary-task-row">
           <td style="padding-left:40px; font-size:12.5px; color:var(--ink-soft);">${esc(e.clientName || "(no client name)")} \u00b7 ${formatDate(e.savedAt)}</td>
           <td class="numc" style="font-size:12.5px; color:var(--ink-soft);">${r.defaultHours.toLocaleString("nl-NL")}</td>
           <td class="numc" style="font-size:12.5px; color:var(--ink-soft);">${e.hours.toLocaleString("nl-NL")}</td>
-          <td></td><td></td><td></td>
-        </tr>`).join("");
+          <td></td>
+          <td class="numc" style="font-size:12.5px; color:${entryVarianceColor};">${entryVarianceStr}</td>
+          <td class="numc" style="font-size:12.5px;">${buildDeviationBar(entryVariancePct, entryVarianceColor)}</td>
+        </tr>`;
+      }).join("");
       return mainRow + detailRows;
     }).join("");
 
