@@ -192,9 +192,15 @@
           <h2 style="font-size:15px;">Hours quoted per role</h2>
           <div class="sub">Total hours quoted each month, by role.</div>
         </div>
-        <select id="hoursPerRoleSelect" style="max-width:200px;">
-          <option value="">All roles</option>
-        </select>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <select id="hoursPerRoleSelect" style="max-width:200px;">
+            <option value="">All roles</option>
+          </select>
+          <span class="sub" id="hoursPerRoleCompareLabel" style="display:none;">vs.</span>
+          <select id="hoursPerRoleCompareSelect" style="max-width:200px; display:none;">
+            <option value="">Compare to\u2026</option>
+          </select>
+        </div>
       </div>
       <div id="hoursPerRoleChart" style="margin-top:14px;"></div>
     </section>

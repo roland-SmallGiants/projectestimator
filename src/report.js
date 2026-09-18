@@ -413,25 +413,76 @@ function computeHoursPerRoleByMonth() {
   return { months, keys, roles };
 }
 
+function renderMultiRoleChart(wrap, months, keys, rolesToShow, padLeft, padBottom, padTop, padRight, plotW, plotH, groupW) {
+  const rawMax = Math.max(1, ...keys.flatMap((k) => rolesToShow.map((r) => months[k].byRole[r] || 0)));
+  const { niceMax, step } = computeNiceAxis(rawMax, 5);
+  const barW = Math.min(rolesToShow.length <= 2 ? 40 : 16, (groupW - 6) / Math.max(1, rolesToShow.length)), gap = rolesToShow.length <= 2 ? 6 : 3;
+  const gridLines = [0, 1, 2, 3, 4].map((i) => {
+    const val = step * i, f = niceMax > 0 ? val / niceMax : 0, y = padTop + plotH * (1 - f);
+    return `<line x1="${padLeft}" y1="${y}" x2="${900 - padRight}" y2="${y}" stroke="var(--line)"/><text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--ink-soft)">${val.toLocaleString("nl-NL")}h</text>`;
+  }).join("");
+  const clusterW = rolesToShow.length * barW + (rolesToShow.length - 1) * gap;
+  const bars = keys.map((k, i) => {
+    const m = months[k];
+    const groupX = padLeft + i * groupW + (groupW - clusterW) / 2;
+    const parts = rolesToShow.map((role, j) => {
+      const val = m.byRole[role] || 0;
+      if (val <= 0) return "";
+      const color = avatarColorFor(role);
+      const h = (val / niceMax) * plotH, x = groupX + j * (barW + gap), y = padTop + plotH - h;
+      const rect = `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${esc(role)}: ${val.toLocaleString("nl-NL")}h"></rect>`;
+      const label = rolesToShow.length <= 2 ? `<text x="${x + barW / 2}" y="${y - 6}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)" pointer-events="none">${val.toLocaleString("nl-NL")}h</text>` : "";
+      return rect + label;
+    }).join("");
+    return `${parts}<text x="${padLeft + i * groupW + groupW / 2}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
+  }).join("");
+  const legend = rolesToShow.map((r) => `<span><span style="display:inline-block; width:10px; height:10px; background:${avatarColorFor(r)}; border-radius:2px; margin-right:5px;"></span>${esc(r)}</span>`).join("");
+  wrap.innerHTML = `<div style="display:flex; gap:14px; margin-bottom:8px; font-size:12px; color:var(--ink-soft); flex-wrap:wrap;">${legend}</div>
+    <div style="position:relative;">
+      <svg viewBox="0 0 900 260" style="width:100%; height:auto; display:block;">${gridLines}${bars}</svg>
+      <div class="chart-tooltip" style="display:none; position:absolute; pointer-events:none; background:var(--ink); color:var(--bg-raised); font-size:12px; padding:6px 10px; border-radius:6px; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,0.2); z-index:10;"></div>
+    </div>`;
+  wireChartBarTooltips(wrap);
+}
+
 export function populateHoursPerRoleSelect() {
   const select = document.getElementById("hoursPerRoleSelect");
+  const compareSelect = document.getElementById("hoursPerRoleCompareSelect");
+  const compareLabel = document.getElementById("hoursPerRoleCompareLabel");
   if (!select) return;
   const { roles } = computeHoursPerRoleByMonth();
   const current = select.value;
   select.innerHTML = `<option value="">All roles</option>` + roles.map((r) => `<option value="${esc(r)}">${esc(r)}</option>`).join("");
   if (roles.includes(current)) select.value = current;
+
+  if (compareSelect) {
+    const currentCompare = compareSelect.value;
+    const compareOptions = roles.filter((r) => r !== select.value);
+    compareSelect.innerHTML = `<option value="">Compare to\u2026</option>` + compareOptions.map((r) => `<option value="${esc(r)}">${esc(r)}</option>`).join("");
+    if (compareOptions.includes(currentCompare)) compareSelect.value = currentCompare;
+    const showCompare = !!select.value;
+    compareSelect.style.display = showCompare ? "" : "none";
+    if (compareLabel) compareLabel.style.display = showCompare ? "" : "none";
+  }
 }
 
 export function renderHoursPerRoleChart() {
   const wrap = document.getElementById("hoursPerRoleChart");
   if (!wrap) return;
   const select = document.getElementById("hoursPerRoleSelect");
+  const compareSelect = document.getElementById("hoursPerRoleCompareSelect");
   const selectedRole = select ? select.value : "";
+  const compareRole = compareSelect && compareSelect.style.display !== "none" ? compareSelect.value : "";
   const { months, keys, roles } = computeHoursPerRoleByMonth();
   if (!keys.length) { wrap.innerHTML = `<div class="task-empty">No quotes yet.</div>`; return; }
 
   const padLeft = 50, padBottom = 40, padTop = 24, padRight = 10, plotW = 900 - padLeft - padRight, plotH = 260 - padTop - padBottom;
   const groupW = plotW / keys.length;
+
+  if (selectedRole && compareRole) {
+    renderMultiRoleChart(wrap, months, keys, [selectedRole, compareRole], padLeft, padBottom, padTop, padRight, plotW, plotH, groupW);
+    return;
+  }
 
   if (selectedRole) {
     const color = avatarColorFor(selectedRole);
@@ -454,39 +505,19 @@ export function renderHoursPerRoleChart() {
     return;
   }
 
-  // All roles: grouped bars, one per role, side by side within each month.
-  const rawMax = Math.max(1, ...keys.flatMap((k) => roles.map((r) => months[k].byRole[r] || 0)));
-  const { niceMax, step } = computeNiceAxis(rawMax, 5);
-  const barW = Math.min(16, (groupW - 6) / Math.max(1, roles.length)), gap = 3;
-  const gridLines = [0, 1, 2, 3, 4].map((i) => {
-    const val = step * i, f = niceMax > 0 ? val / niceMax : 0, y = padTop + plotH * (1 - f);
-    return `<line x1="${padLeft}" y1="${y}" x2="${900 - padRight}" y2="${y}" stroke="var(--line)"/><text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--ink-soft)">${val.toLocaleString("nl-NL")}h</text>`;
-  }).join("");
-  const clusterW = roles.length * barW + (roles.length - 1) * gap;
-  const bars = keys.map((k, i) => {
-    const m = months[k];
-    const groupX = padLeft + i * groupW + (groupW - clusterW) / 2;
-    const parts = roles.map((role, j) => {
-      const val = m.byRole[role] || 0;
-      if (val <= 0) return "";
-      const color = avatarColorFor(role);
-      const h = (val / niceMax) * plotH, x = groupX + j * (barW + gap), y = padTop + plotH - h;
-      return `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${esc(role)}: ${val.toLocaleString("nl-NL")}h"></rect>`;
-    }).join("");
-    return `${parts}<text x="${padLeft + i * groupW + groupW / 2}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
-  }).join("");
-  const legend = roles.map((r) => `<span><span style="display:inline-block; width:10px; height:10px; background:${avatarColorFor(r)}; border-radius:2px; margin-right:5px;"></span>${esc(r)}</span>`).join("");
-  wrap.innerHTML = `<div style="display:flex; gap:14px; margin-bottom:8px; font-size:12px; color:var(--ink-soft); flex-wrap:wrap;">${legend}</div>
-    <div style="position:relative;">
-      <svg viewBox="0 0 900 260" style="width:100%; height:auto; display:block;">${gridLines}${bars}</svg>
-      <div class="chart-tooltip" style="display:none; position:absolute; pointer-events:none; background:var(--ink); color:var(--bg-raised); font-size:12px; padding:6px 10px; border-radius:6px; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,0.2); z-index:10;"></div>
-    </div>`;
-  wireChartBarTooltips(wrap);
+  renderMultiRoleChart(wrap, months, keys, roles, padLeft, padBottom, padTop, padRight, plotW, plotH, groupW);
 }
 
 export function wireHoursPerRoleSelect() {
   const select = document.getElementById("hoursPerRoleSelect");
-  if (select) select.addEventListener("change", renderHoursPerRoleChart);
+  const compareSelect = document.getElementById("hoursPerRoleCompareSelect");
+  if (select) {
+    select.addEventListener("change", () => {
+      populateHoursPerRoleSelect(); // refresh compare options + visibility for the new primary role
+      renderHoursPerRoleChart();
+    });
+  }
+  if (compareSelect) compareSelect.addEventListener("change", renderHoursPerRoleChart);
 }
 
 export function renderReport() {
