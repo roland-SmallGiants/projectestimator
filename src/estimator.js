@@ -28,6 +28,14 @@ export function renderLockBanner() {
   }
 }
 
+export function renderSaveButtonLabel() {
+  const btn = document.getElementById("saveQuoteBtn");
+  if (!btn) return;
+  const d = currentDraft();
+  const isEditingExisting = d && d.sourceQuoteId && state.quotes[d.sourceQuoteId];
+  btn.textContent = isEditingExisting ? "Update quote in archive" : "Save to archive";
+}
+
 export function renderClientSection() {
   const d = currentDraft();
   if (!d) return;
@@ -221,6 +229,7 @@ export function buildQuoteSnapshot() {
 
 export function renderEstimatorView() {
   renderLockBanner();
+  renderSaveButtonLabel();
   renderClientSection();
   renderDisciplineSelector();
   renderItemTabs();

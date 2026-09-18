@@ -100,7 +100,7 @@ export function renderDraftsList() {
   });
 }
 
-export async function createDraft(clientName) {
+export async function createDraft(clientName, sourceQuoteId) {
   const ref = await db.collection("drafts").add({
     clientName: clientName || "",
     projectDescription: "",
@@ -111,6 +111,7 @@ export async function createDraft(clientName) {
     createdAt: nowTimestamp(),
     lockedBy: null,
     lockedAt: null,
+    sourceQuoteId: sourceQuoteId || null,
   });
   return ref.id;
 }

@@ -15,9 +15,25 @@ export function subscribeQuotes(onChange) {
 
 export async function saveCurrentDraftAsQuote() {
   const snap = buildQuoteSnapshot();
-  await db.collection("quotes").add({ ...snap, createdBy: state.currentUser });
-  // Saving closes out the draft: release the lock and delete it plus its items.
   const draftId = state.currentDraftId;
+  const draft = state.drafts[draftId];
+  const sourceQuoteId = draft && draft.sourceQuoteId;
+
+  if (sourceQuoteId && state.quotes[sourceQuoteId]) {
+    // This draft came from "Continue in Estimator" on an existing quote:
+    // update that quote in place (keeping its original savedAt/createdBy/
+    // status) and stamp it as edited, rather than creating a duplicate.
+    const { savedAt, ...snapWithoutSavedAt } = snap;
+    await db.collection("quotes").doc(sourceQuoteId).update({
+      ...snapWithoutSavedAt,
+      editedAt: nowTimestamp(),
+      editedBy: state.currentUser,
+    }).catch(() => {});
+  } else {
+    await db.collection("quotes").add({ ...snap, createdBy: state.currentUser });
+  }
+
+  // Saving closes out the draft either way: release the lock and delete it plus its items.
   await releaseLock(draftId);
   const items = await db.collection("draft_items").get();
   for (const doc of items.docs) {
@@ -137,10 +153,10 @@ export function wireArchiveRows(wrap, rerender) {
       const id = btn.closest(".archive-row").dataset.id;
       openConfirm(
         "Continue this quote in the Estimator?",
-        "This creates a new in-progress draft pre-filled with this quote's data, which you (and only you, while you're in it) can then edit. The original archived quote is left untouched until you save again.",
+        "This opens the quote as an in-progress draft so you (and only you, while you're in it) can keep editing it. Saving it again will update this same archived quote in place \u2014 stamped as edited \u2014 rather than creating a new one.",
         async () => {
           const q = state.quotes[id];
-          const draftId = await createDraft(q.clientName === "(no client name)" ? "" : q.clientName);
+          const draftId = await createDraft(q.clientName === "(no client name)" ? "" : q.clientName, id);
           await db.collection("drafts").doc(draftId).update({
             projectDescription: q.projectDescription || "",
             disciplineMode: q.disciplineMode || (q.disciplines.length > 1 ? "multiple" : "single"),
@@ -159,7 +175,7 @@ export function wireArchiveRows(wrap, rerender) {
           state.currentDraftId = draftId;
           window.dispatchEvent(new CustomEvent("open-draft", { detail: { id: draftId } }));
         },
-        "Yes, create draft"
+        "Yes, continue editing"
       );
     };
   });

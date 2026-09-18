@@ -85,11 +85,15 @@ function wireDraftsActions() {
 function wireEstimatorActions() {
   document.getElementById("saveQuoteBtn").onclick = () => {
     if (isReadOnly()) return;
+    const draft = state.drafts[state.currentDraftId];
+    const isEditingExisting = draft && draft.sourceQuoteId && state.quotes[draft.sourceQuoteId];
     openConfirm(
-      "Save this quote to the archive?",
-      "This saves a read-only copy to the Quote Archive and closes out this draft. This can't be undone from here.",
+      isEditingExisting ? "Update this quote in the archive?" : "Save this quote to the archive?",
+      isEditingExisting
+        ? "This updates the existing archived quote in place, stamped with today's edited date, and closes out this draft. This can't be undone from here."
+        : "This saves a read-only copy to the Quote Archive and closes out this draft. This can't be undone from here.",
       async () => { await saveCurrentDraftAsQuote(); showView("drafts"); },
-      "Yes, save"
+      isEditingExisting ? "Yes, update" : "Yes, save"
     );
   };
   document.getElementById("closeDraftBtn").onclick = async () => {
