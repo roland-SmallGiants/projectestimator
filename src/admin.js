@@ -268,6 +268,14 @@ export function renderDisciplinesAdmin() {
     const d = state.disciplines[id];
     const tasks = Object.entries(state.taskCatalog || {}).filter(([, t]) => t.category === d.name).sort((a, b) => (a[1].order ?? 0) - (b[1].order ?? 0));
     const isApplicable = (r) => !Array.isArray(r.categories) || r.categories.length === 0 || r.categories.includes(d.name);
+    // Non-applicable roles are pushed to the left, applicable ones grouped on
+    // the right \u2014 this means the same role can sit in a different column
+    // position from one discipline to the next.
+    const rolesForThisDiscipline = [...allRoles].sort((a, b) => {
+      const aApp = isApplicable(a), bApp = isApplicable(b);
+      if (aApp === bApp) return 0;
+      return aApp ? 1 : -1;
+    });
     const colCount = allRoles.length + 3;
 
     return `<div class="discipline-row" data-id="${id}" style="border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:12px;">
@@ -288,14 +296,14 @@ export function renderDisciplinesAdmin() {
             <th rowspan="2" style="width:30px;"></th>
           </tr>
           <tr>
-            ${allRoles.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px;">${isApplicable(r) ? esc(r.role) : ""}</th>`).join("")}
+            ${rolesForThisDiscipline.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px;">${isApplicable(r) ? esc(r.role) : ""}</th>`).join("")}
           </tr>
         </thead>
         <tbody class="task-drag-list" data-disc-id="${id}">
           ${tasks.map(([tid, t]) => `<tr class="task-drag-item" draggable="true" data-item-id="${tid}">
             <td><span class="sub" style="cursor:grab; user-select:none;">\u283f</span> ${esc(t.task)}</td>
             <td></td>
-            ${allRoles.map((r) => {
+            ${rolesForThisDiscipline.map((r) => {
               const applicable = isApplicable(r);
               return `<td class="numc">${applicable
                 ? `<input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5">`
