@@ -1,6 +1,5 @@
 import { state, CATEGORIES } from "./state.js";
 import { esc, money, computeNiceAxis, formatAxisValue, formatDate } from "./utils.js";
-import { buildArchiveRowHtml, wireArchiveRows } from "./quotes.js";
 
 export function computeMonthlyRevenueData() {
   const months = {};
@@ -98,6 +97,7 @@ function wireChartBarTooltips(wrap) {
 }
 
 const COLORS = { pending: "#9C9AAE", won: "#FFBA30", lost: "#D64545" };
+const LABEL_TEXT_COLOR = { pending: "#1C1B33", won: "#1C1B33", lost: "#fff" };
 
 function chartShell(colors, gridLines, bars) {
   return `<div style="display:flex; gap:16px; margin-bottom:8px; font-size:12px; color:var(--ink-soft);">
@@ -116,7 +116,7 @@ function renderGroupedChart(wrap) {
   if (!keys.length) { wrap.innerHTML = `<div class="task-empty">No quotes yet.</div>`; return; }
   const rawMax = Math.max(1, ...keys.flatMap((k) => [months[k].pending, months[k].won, months[k].lost]));
   const { niceMax, step } = computeNiceAxis(rawMax, 5);
-  const padLeft = 50, padBottom = 40, padTop = 10, padRight = 10, plotW = 900 - padLeft - padRight, plotH = 260 - padTop - padBottom;
+  const padLeft = 50, padBottom = 40, padTop = 24, padRight = 10, plotW = 900 - padLeft - padRight, plotH = 260 - padTop - padBottom;
   const groupW = plotW / keys.length, barW = Math.min(22, groupW / 4.5), gap = 4;
 
   const gridLines = [0, 1, 2, 3, 4].map((i) => {
@@ -127,7 +127,9 @@ function renderGroupedChart(wrap) {
     const groupX = padLeft + i * groupW + (groupW - (barW * 3 + gap * 2)) / 2, m = months[k];
     const parts = ["pending", "won", "lost"].map((status, j) => {
       const val = m[status], h = (val / niceMax) * plotH, x = groupX + j * (barW + gap), y = padTop + plotH - h;
-      return `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${Math.max(h, val > 0 ? 2 : 0)}" fill="${COLORS[status]}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${status[0].toUpperCase() + status.slice(1)}: ${money(val)}"></rect>`;
+      const rect = `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${Math.max(h, val > 0 ? 2 : 0)}" fill="${COLORS[status]}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${status[0].toUpperCase() + status.slice(1)}: ${money(val)}"></rect>`;
+      const label = val > 0 ? `<text x="${x + barW / 2}" y="${y - 5}" text-anchor="middle" font-size="9" font-weight="700" fill="var(--ink)" pointer-events="none">${formatAxisValue(val)}</text>` : "";
+      return rect + label;
     }).join("");
     return `${parts}<text x="${padLeft + i * groupW + groupW / 2}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
   }).join("");
@@ -140,7 +142,7 @@ function renderStackedChart(wrap) {
   if (!keys.length) { wrap.innerHTML = `<div class="task-empty">No quotes yet.</div>`; return; }
   const totals = keys.map((k) => months[k].pending + months[k].won + months[k].lost);
   const { niceMax, step } = computeNiceAxis(Math.max(1, ...totals), 5);
-  const padLeft = 60, padBottom = 40, padTop = 10, padRight = 10, plotW = 900 - padLeft - padRight, plotH = 260 - padTop - padBottom;
+  const padLeft = 60, padBottom = 40, padTop = 24, padRight = 10, plotW = 900 - padLeft - padRight, plotH = 260 - padTop - padBottom;
   const groupW = plotW / keys.length, barW = Math.min(48, groupW * 0.5);
   const gridLines = [0, 1, 2, 3, 4].map((i) => {
     const val = step * i, f = niceMax > 0 ? val / niceMax : 0, y = padTop + plotH * (1 - f);
@@ -152,9 +154,13 @@ function renderStackedChart(wrap) {
     const segs = ["pending", "won", "lost"].map((status) => {
       const val = m[status]; if (val <= 0) return "";
       const h = (val / niceMax) * plotH, y = padTop + plotH - cumulative - h; cumulative += h;
-      return `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[status]}" data-tooltip="${esc(m.label)} \u00b7 ${status[0].toUpperCase() + status.slice(1)}: ${money(val)}"></rect>`;
+      const rect = `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[status]}" data-tooltip="${esc(m.label)} \u00b7 ${status[0].toUpperCase() + status.slice(1)}: ${money(val)}"></rect>`;
+      const label = h >= 16 ? `<text x="${x + barW / 2}" y="${y + h / 2 + 3.5}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${LABEL_TEXT_COLOR[status]}" pointer-events="none">${formatAxisValue(val)}</text>` : "";
+      return rect + label;
     }).join("");
-    return `${segs}<text x="${padLeft + i * groupW + groupW / 2}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
+    const total = totals[i];
+    const totalLabel = total > 0 ? `<text x="${x + barW / 2}" y="${padTop + plotH - cumulative - 6}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)" pointer-events="none">${formatAxisValue(total)}</text>` : "";
+    return `${segs}${totalLabel}<text x="${padLeft + i * groupW + groupW / 2}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
   }).join("");
   wrap.innerHTML = chartShell(COLORS, gridLines, bars);
   wireChartBarTooltips(wrap);
@@ -176,7 +182,9 @@ function renderPercentChart(wrap) {
     const segs = ["pending", "won", "lost"].map((status) => {
       const val = m[status]; if (val <= 0) return "";
       const pct = (val / total) * 100, h = (pct / 100) * plotH, y = padTop + plotH - cumulative - h; cumulative += h;
-      return `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[status]}" data-tooltip="${esc(m.label)} \u00b7 ${status[0].toUpperCase() + status.slice(1)}: ${pct.toFixed(0)}% (${money(val)})"></rect>`;
+      const rect = `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[status]}" data-tooltip="${esc(m.label)} \u00b7 ${status[0].toUpperCase() + status.slice(1)}: ${pct.toFixed(0)}% (${money(val)})"></rect>`;
+      const label = h >= 16 ? `<text x="${x + barW / 2}" y="${y + h / 2 + 3.5}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${LABEL_TEXT_COLOR[status]}" pointer-events="none">${pct.toFixed(0)}%</text>` : "";
+      return rect + label;
     }).join("");
     return `${segs}<text x="${labelX}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
   }).join("");
@@ -201,30 +209,6 @@ export function wireChartToggle() {
       renderReportChart();
     };
   });
-}
-
-export function renderReportColumns() {
-  const wrap = document.getElementById("reportColumns");
-  if (!wrap) return;
-  const columns = [
-    { key: "pending", label: "Pending", accent: "var(--ink-soft)" },
-    { key: "won", label: "Won", accent: "var(--accent)" },
-    { key: "lost", label: "Lost", accent: "var(--rose)" },
-  ];
-  const grouped = { pending: [], won: [], lost: [] };
-  Object.keys(state.quotes).forEach((id) => {
-    const status = state.quotes[id].status === "won" || state.quotes[id].status === "lost" ? state.quotes[id].status : "pending";
-    grouped[status].push(id);
-  });
-  Object.values(grouped).forEach((list) => list.sort((a, b) => new Date(state.quotes[b].savedAt) - new Date(state.quotes[a].savedAt)));
-
-  wrap.innerHTML = columns.map((col) => {
-    const list = grouped[col.key];
-    const total = list.reduce((s, id) => s + (state.quotes[id].finalPrice || 0), 0);
-    const rows = list.length ? `<div class="report-rows">${list.map((id) => buildArchiveRowHtml(id)).join("")}</div>` : `<div class="task-empty">No quotes here yet.</div>`;
-    return `<div class="report-col"><h3 style="color:${col.accent};">${col.label}</h3><div class="report-col-total">${list.length} quote${list.length === 1 ? "" : "s"} \u00b7 ${money(total)}</div>${rows}</div>`;
-  }).join("");
-  wireArchiveRows(wrap, renderReportColumns);
 }
 
 function catalogDefaultHours(t) {
@@ -400,16 +384,15 @@ export function renderNeverUsedSection() {
   if (!el) return;
   const groups = computeNeverUsedByDiscipline();
   if (!groups.length) { el.innerHTML = `<div class="task-empty">Every task has been used in at least one quote.</div>`; return; }
-  el.innerHTML = groups.map((g) => `<div style="margin-bottom:12px;">
-    <div style="font-weight:700; color:var(--accent); margin-bottom:4px;">${esc(g.category)}${g.allUnused ? ` <span class="sub" style="color:var(--rose); font-weight:600;">\u2014 no tasks in this discipline have been quoted yet</span>` : ""}</div>
-    <div class="sub">${g.tasks.map((t) => esc(t)).join(", ")}</div>
+  el.innerHTML = groups.map((g) => `<div style="margin-bottom:16px;">
+    <div style="font-weight:700; color:var(--accent); margin-bottom:6px;">${esc(g.category)}${g.allUnused ? ` <span class="sub" style="color:var(--rose); font-weight:600;">\u2014 no tasks in this discipline have been quoted yet</span>` : ""}</div>
+    <div class="chips small">${g.tasks.map((t) => `<span class="chip" style="cursor:default;">${esc(t)}</span>`).join("")}</div>
   </div>`).join("");
 }
 
 export function renderReport() {
   renderReportInsights();
   renderReportChart();
-  renderReportColumns();
   renderHoursComparison();
   renderNeverUsedSection();
 }
