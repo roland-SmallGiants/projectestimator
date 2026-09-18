@@ -34,7 +34,7 @@ export function renderSaveButtonLabel() {
   if (!btn) return;
   const d = currentDraft();
   const isEditingExisting = d && d.sourceQuoteId && state.quotes[d.sourceQuoteId];
-  btn.textContent = isEditingExisting ? "Update quote in archive" : "Save to archive";
+  btn.textContent = isEditingExisting ? "Update Quote" : "Save Quote";
 }
 
 function knownClientNames() {
@@ -96,6 +96,12 @@ export function renderClientSection() {
   };
   nameInput.oninput = () => !ro && checkClientNameSuggestion();
   descInput.onchange = () => !ro && db.collection("drafts").doc(state.currentDraftId).update({ projectDescription: descInput.value }).catch(() => {});
+  descInput.oninput = () => {
+    if (descInput.value.trim()) {
+      const errEl = document.getElementById("projectDescriptionError");
+      if (errEl) errEl.style.display = "none";
+    }
+  };
 }
 
 export function renderDisciplineSelector() {
@@ -154,7 +160,7 @@ export function renderItemTabs() {
     `<button type="button" class="work-tab-item ${c === state.activeTab ? "active" : ""}" data-cat="${esc(c)}">${esc(c)}</button>`
   ).join("");
   wrap.querySelectorAll(".work-tab-item").forEach((tab) => {
-    tab.onclick = () => { state.activeTab = tab.dataset.cat; renderItems(); };
+    tab.onclick = () => { state.activeTab = tab.dataset.cat; renderItemTabs(); renderItems(); };
   });
 }
 

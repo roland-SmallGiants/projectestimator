@@ -11,6 +11,8 @@ body { margin:0; font-family:'Montserrat', system-ui, sans-serif; background:var
 .nav-menu-item { color:var(--ink-soft); text-decoration:none; font-size:13.5px; font-weight:600; padding:4px 0; border-bottom:2px solid transparent; transition:color .15s, border-color .15s; }
 .nav-menu-item:hover { color:var(--ink); }
 .nav-menu-item.active { color:var(--ink); border-bottom-color:var(--accent); }
+.logo-img { filter:invert(1); }
+@media (prefers-color-scheme: dark) { .logo-img { filter:none; } }
 .work-tab-item { all:unset; cursor:pointer; padding:8px 14px; font-size:13px; font-weight:600; color:var(--ink-soft); border-bottom:2px solid var(--line); }
 .work-tab-item:hover { color:var(--ink); }
 .work-tab-item.active { color:var(--ink); border-bottom-color:var(--accent); }

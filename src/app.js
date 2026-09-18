@@ -88,6 +88,15 @@ function wireEstimatorActions() {
   document.getElementById("saveQuoteBtn").onclick = () => {
     if (isReadOnly()) return;
     const draft = state.drafts[state.currentDraftId];
+    const errEl = document.getElementById("projectDescriptionError");
+    if (!draft || !draft.projectDescription || !draft.projectDescription.trim()) {
+      errEl.style.display = "block";
+      const descInput = document.getElementById("projectDescriptionInput");
+      descInput.focus();
+      descInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    errEl.style.display = "none";
     const isEditingExisting = draft && draft.sourceQuoteId && state.quotes[draft.sourceQuoteId];
     const snap = buildQuoteSnapshot();
     const summary = `

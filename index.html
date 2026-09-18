@@ -34,9 +34,8 @@
 
 <header id="topHeader" style="width:100%; background:var(--bg-raised); border-bottom:1px solid var(--line);">
   <div style="max-width:1280px; margin:0 auto; padding:14px 24px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
-    <a href="#" id="logoLink" style="text-decoration:none; display:flex; align-items:baseline; gap:4px;">
-      <span style="font-family:'Montserrat', system-ui, sans-serif; font-weight:700; font-size:18px; color:var(--ink);">Small</span>
-      <span style="font-family:'Montserrat', system-ui, sans-serif; font-weight:700; font-size:18px; color:var(--accent);">Giants</span>
+    <a href="#" id="logoLink" style="text-decoration:none; display:flex; align-items:center;">
+      <img src="src/logo.svg" alt="Small Giants" class="logo-img" style="height:26px; display:block;">
     </a>
     <nav id="topNav" style="display:flex; align-items:center; gap:22px;">
       <a href="#" class="nav-menu-item" id="newQuoteNavBtn">New Quote</a>
@@ -85,6 +84,7 @@
         <div style="margin-top:12px;">
           <label class="sub" style="display:block; margin-bottom:4px;">Project description</label>
           <textarea id="projectDescriptionInput" placeholder="A short description of this project…" rows="2" style="width:100%; font-family:inherit; font-size:13px; padding:7px 9px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); resize:vertical;"></textarea>
+          <div class="status err" id="projectDescriptionError" style="display:none; margin-top:4px;">A project description is required before this can be saved.</div>
         </div>
       </section>
       <section class="card">
@@ -127,7 +127,7 @@
     <div id="saveQuoteFloatBar" style="position:fixed; right:24px; bottom:24px; display:flex; gap:10px; z-index:30;">
       <button class="btn ghost" id="discardDraftBtn" style="color:var(--rose);">Discard</button>
       <button class="btn ghost" id="closeDraftBtn">Save as Draft</button>
-      <button class="btn primary" id="saveQuoteBtn" style="font-size:15px; padding:14px 26px; box-shadow:0 4px 14px rgba(0,0,0,0.18);">Save as Quote</button>
+      <button class="btn primary" id="saveQuoteBtn" style="font-size:15px; padding:14px 26px; box-shadow:0 4px 14px rgba(0,0,0,0.18);">Save Quote</button>
     </div>
   </div>
 
