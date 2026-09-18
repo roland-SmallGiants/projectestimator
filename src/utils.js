@@ -119,6 +119,13 @@ export function normalizeClientName(name) {
     .join(" ");
 }
 
+const AVATAR_COLORS = ["#FFBA30", "#7CC6FE", "#F080A0", "#8FE3B0", "#C7A6FF", "#FFA26B"];
+export function avatarColorFor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 export function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }

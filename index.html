@@ -32,21 +32,29 @@
   </div>
 </div>
 
+<header id="topHeader" style="width:100%; background:var(--bg-raised); border-bottom:1px solid var(--line);">
+  <div style="max-width:1280px; margin:0 auto; padding:14px 24px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+    <a href="#" id="logoLink" style="text-decoration:none; display:flex; align-items:baseline; gap:4px;">
+      <span style="font-family:'Montserrat', system-ui, sans-serif; font-weight:700; font-size:18px; color:var(--ink);">Small</span>
+      <span style="font-family:'Montserrat', system-ui, sans-serif; font-weight:700; font-size:18px; color:var(--accent);">Giants</span>
+    </a>
+    <nav id="topNav" style="display:flex; align-items:center; gap:22px;">
+      <a href="#" class="nav-menu-item" id="newQuoteNavBtn">New Quote</a>
+      <a href="#" class="nav-menu-item" id="quotesNavBtn">Quotes</a>
+      <a href="#" class="nav-menu-item" id="reportNavBtn">Report</a>
+      <a href="#" class="nav-menu-item" id="adminNavBtn" style="display:none;">Admin</a>
+      <span style="width:1px; height:22px; background:var(--line);"></span>
+      <span id="currentUserIndicator"></span>
+    </nav>
+  </div>
+</header>
+
 <div class="wrap">
   <header style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
     <div>
       <h1>Client Work Estimator</h1>
       <p>Shared with your team. Multiple quotes can be in progress at once — everyone sees the same drafts list.</p>
       <div class="status" id="status">Connecting…</div>
-    </div>
-    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
-      <div class="sub" id="currentUserIndicator" style="margin:0;"></div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn ghost small" id="backToDraftsBtn" style="display:none;">← All drafts</button>
-        <button class="btn ghost small" id="quotesNavBtn">Quotes →</button>
-        <button class="btn ghost small" id="reportNavBtn">Report →</button>
-        <button class="btn ghost small" id="adminNavBtn" style="display:none;">Admin →</button>
-      </div>
     </div>
   </header>
 
@@ -106,7 +114,7 @@
       <table style="table-layout:fixed; width:100%;">
         <thead><tr>
           <th style="width:32%">Task</th><th class="numc" style="width:8%">Qty</th>
-          <th style="width:20%">Role <select id="bulkRoleSelect" style="margin-left:6px; font-size:11px;"></select></th>
+          <th style="width:20%">Role</th>
           <th class="numc" style="width:9%">Hours</th><th class="num" style="width:11%">Cost (€)</th>
           <th style="width:16%">Notes</th><th style="width:4%"></th>
         </tr></thead>
@@ -117,8 +125,9 @@
 
     <div style="height:70px;"></div>
     <div id="saveQuoteFloatBar" style="position:fixed; right:24px; bottom:24px; display:flex; gap:10px; z-index:30;">
-      <button class="btn ghost" id="closeDraftBtn">Close (keep as draft)</button>
-      <button class="btn primary" id="saveQuoteBtn" style="font-size:15px; padding:14px 26px; box-shadow:0 4px 14px rgba(0,0,0,0.18);">Save to archive</button>
+      <button class="btn ghost" id="discardDraftBtn" style="color:var(--rose);">Discard</button>
+      <button class="btn ghost" id="closeDraftBtn">Save as Draft</button>
+      <button class="btn primary" id="saveQuoteBtn" style="font-size:15px; padding:14px 26px; box-shadow:0 4px 14px rgba(0,0,0,0.18);">Save as Quote</button>
     </div>
   </div>
 

@@ -103,6 +103,26 @@ function wireEstimatorActions() {
     state.currentDraftId = null;
     showView("drafts");
   };
+  document.getElementById("discardDraftBtn").onclick = () => {
+    if (isReadOnly()) return;
+    const draftId = state.currentDraftId;
+    const draft = state.drafts[draftId];
+    openConfirm(
+      "Discard this draft?",
+      `This permanently deletes "${(draft && draft.clientName) || "(no client name)"}" and everything in it. This can't be undone.`,
+      async () => {
+        const items = await db.collection("draft_items").get();
+        for (const doc of items.docs) {
+          if (doc.data().draftId === draftId) await db.collection("draft_items").doc(doc.id).delete().catch(() => {});
+        }
+        await db.collection("drafts").doc(draftId).delete().catch(() => {});
+        unsubscribeDraftItems();
+        state.currentDraftId = null;
+        showView("drafts");
+      },
+      "Yes, discard"
+    );
+  };
 }
 
 function renderQuotesView() {

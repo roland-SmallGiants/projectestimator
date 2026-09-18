@@ -182,6 +182,14 @@ export function renderItems() {
     </tr>`;
   }).join("") || `<tr><td colspan="7" class="sub" style="text-align:center; padding:16px;">No tasks in this discipline yet.</td></tr>`;
 
+  if (!ro && items.length) {
+    body.innerHTML += `<tr>
+      <td colspan="2" class="sub" style="text-align:right;">Set all roles to</td>
+      <td><select id="bulkRoleSelect"><option value="">Set all to\u2026</option>${roleOptions.map((r) => `<option>${esc(r)}</option>`).join("")}</select></td>
+      <td colspan="4"></td>
+    </tr>`;
+  }
+
   if (ro) return;
 
   body.querySelectorAll(".it-qty").forEach((el) => el.onchange = () => updateItem(el.dataset.id, { qty: Number(el.value) || 1 }));
@@ -206,7 +214,6 @@ export function renderItems() {
 
   const bulkSelect = document.getElementById("bulkRoleSelect");
   if (bulkSelect) {
-    bulkSelect.innerHTML = `<option value="">Set all to\u2026</option>` + roleOptions.map((r) => `<option>${esc(r)}</option>`).join("");
     bulkSelect.onchange = () => {
       if (!bulkSelect.value) return;
       items.forEach(([id]) => updateItem(id, { role: bulkSelect.value }));

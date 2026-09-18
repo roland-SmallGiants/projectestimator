@@ -1,6 +1,6 @@
 import { db } from "./firebase-init.js";
 import { state } from "./state.js";
-import { esc, sortUsersRolandLast } from "./utils.js";
+import { esc, sortUsersRolandLast, avatarColorFor } from "./utils.js";
 
 const ADMIN_SESSION_KEY = "sg_estimator_admin_unlocked";
 
@@ -23,11 +23,14 @@ try { state.isAdmin = sessionStorage.getItem(ADMIN_SESSION_KEY) === "1"; } catch
 export function renderCurrentUserIndicator() {
   const el = document.getElementById("currentUserIndicator");
   if (!el) return;
-  el.innerHTML = state.currentUser
-    ? `You are: <strong>${esc(state.currentUser)}</strong>${state.isAdmin ? " (Admin)" : ""} \u00b7 <a href="#" id="switchUserLink" style="color:var(--ink-soft);">Switch</a>`
-    : "";
-  const link = document.getElementById("switchUserLink");
-  if (link) link.onclick = (e) => { e.preventDefault(); document.getElementById("welcomeOverlay").style.display = "flex"; };
+  if (!state.currentUser) { el.innerHTML = ""; return; }
+  const initial = state.currentUser.trim()[0].toUpperCase();
+  const color = avatarColorFor(state.currentUser);
+  el.innerHTML = `<button type="button" id="userAvatarBtn" title="${esc(state.currentUser)}${state.isAdmin ? " (Admin)" : ""} \u2014 click to switch" style="all:unset; display:flex; align-items:center; gap:8px; cursor:pointer;">
+    <span style="width:28px; height:28px; border-radius:50%; background:${color}; color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px; flex-shrink:0; ${state.isAdmin ? "box-shadow:0 0 0 2px var(--accent);" : ""}">${esc(initial)}</span>
+    <span style="font-size:12.5px; color:var(--ink); font-weight:600;">${esc(state.currentUser)}</span>
+  </button>`;
+  document.getElementById("userAvatarBtn").onclick = () => { document.getElementById("welcomeOverlay").style.display = "flex"; };
   document.getElementById("adminNavBtn").style.display = state.isAdmin ? "" : "none";
 }
 
