@@ -278,15 +278,21 @@ export function renderDisciplinesAdmin() {
     });
     const colCount = allRoles.length + 3;
 
+    const isOpen = state.expandedAdminDisciplines.has(id);
+
     return `<div class="discipline-row" data-id="${id}" style="border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-        <span style="display:flex; align-items:center; gap:8px;">
+        <span class="disc-collapse-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <span style="display:inline-block; width:14px; color:var(--ink-soft);">${isOpen ? "\u25be" : "\u25b8"}</span>
           <span class="disc-name-display" style="font-weight:700;">${esc(d.name)}</span>
+        </span>
+        <span style="display:flex; align-items:center; gap:8px;">
           <input type="text" class="disc-name-input" value="${esc(d.name)}" style="display:none; font-weight:700; max-width:260px;">
           <button type="button" class="disc-name-edit-btn" title="Rename discipline" style="all:unset; cursor:pointer; color:var(--ink-soft); font-size:13px;">\u270f\ufe0f</button>
+          <button class="btn small danger disc-del">\u2715</button>
         </span>
-        <button class="btn small danger disc-del">\u2715</button>
       </div>
+      ${!isOpen ? "" : `
       <table class="task-hours-table" style="table-layout:fixed; width:100%; max-width:100%; margin-top:10px; font-size:12.5px;">
         <thead>
           <tr>
@@ -316,12 +322,18 @@ export function renderDisciplinesAdmin() {
       <div class="row-actions">
         <input type="text" class="new-task-name" placeholder="New task name" style="max-width:220px;">
         <button class="btn ghost small add-task-btn">+ Add</button>
-      </div>
+      </div>`}
     </div>`;
   }).join("") || `<div class="task-empty">No disciplines yet.</div>`;
 
   list.querySelectorAll(".discipline-row").forEach((row) => {
     const id = row.dataset.id;
+
+    row.querySelector(".disc-collapse-toggle").onclick = () => {
+      if (state.expandedAdminDisciplines.has(id)) state.expandedAdminDisciplines.delete(id);
+      else state.expandedAdminDisciplines.add(id);
+      renderDisciplinesAdmin();
+    };
 
     const nameDisplay = row.querySelector(".disc-name-display");
     const nameInput = row.querySelector(".disc-name-input");
@@ -365,13 +377,16 @@ export function renderDisciplinesAdmin() {
       };
     });
     wireTaskDragAndDrop(row.querySelector(".task-drag-list"));
-    row.querySelector(".add-task-btn").onclick = async () => {
-      const input = row.querySelector(".new-task-name");
-      const name = input.value.trim();
-      if (!name) return;
-      await db.collection("task_catalog").add({ category: state.disciplines[id].name, task: name, hoursByRole: {} });
-      input.value = "";
-    };
+    const addTaskBtn = row.querySelector(".add-task-btn");
+    if (addTaskBtn) {
+      addTaskBtn.onclick = async () => {
+        const input = row.querySelector(".new-task-name");
+        const name = input.value.trim();
+        if (!name) return;
+        await db.collection("task_catalog").add({ category: state.disciplines[id].name, task: name, hoursByRole: {} });
+        input.value = "";
+      };
+    }
   });
 }
 

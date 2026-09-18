@@ -23,6 +23,7 @@ export const state = {
   expandedHoursComparisonTasks: new Set(),
   expandedHoursDisciplines: new Set(),
   expandedNeverUsedDisciplines: new Set(),
+  expandedAdminDisciplines: new Set(),
   expandedArchiveCategories: new Set(),
   expandedEditHistory: new Set(),
   openArchiveDetails: new Set(),
