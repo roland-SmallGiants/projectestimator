@@ -156,11 +156,35 @@ function renderQuoteClientOptions() {
   list.innerHTML = [...names].sort((a, b) => a.localeCompare(b)).map((n) => `<option value="${esc(n)}"></option>`).join("");
 }
 
+function computeDateRangeCutoff(filterValue) {
+  const now = new Date();
+  let start = null, end = null;
+  switch (filterValue) {
+    case "7d": start = new Date(now); start.setDate(start.getDate() - 7); break;
+    case "14d": start = new Date(now); start.setDate(start.getDate() - 14); break;
+    case "1m": start = new Date(now); start.setMonth(start.getMonth() - 1); break;
+    case "3m": start = new Date(now); start.setMonth(start.getMonth() - 3); break;
+    case "ytd": start = new Date(now.getFullYear(), 0, 1); break;
+    case "ly": start = new Date(now.getFullYear() - 1, 0, 1); end = new Date(now.getFullYear(), 0, 1); break;
+    default: return null; // "all"
+  }
+  return { start, end };
+}
+
 function renderQuotesView() {
   const wrap = document.getElementById("quoteArchiveList");
   const query = (document.getElementById("quoteSearchInput").value || "").trim().toLowerCase();
+  const dateFilter = document.getElementById("quoteDateFilter").value;
+  const range = computeDateRangeCutoff(dateFilter);
+
   let ids = Object.keys(state.quotes).sort((a, b) => new Date(state.quotes[b].savedAt) - new Date(state.quotes[a].savedAt));
   if (query) ids = ids.filter((id) => (state.quotes[id].clientName || "").toLowerCase().includes(query));
+  if (range) {
+    ids = ids.filter((id) => {
+      const saved = new Date(state.quotes[id].savedAt);
+      return saved >= range.start && (!range.end || saved < range.end);
+    });
+  }
 
   const pendingIds = ids.filter((id) => state.quotes[id].status !== "won" && state.quotes[id].status !== "lost");
   const decidedIds = ids.filter((id) => state.quotes[id].status === "won" || state.quotes[id].status === "lost");
@@ -179,6 +203,7 @@ function renderQuotesView() {
 }
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("quoteSearchInput").addEventListener("input", renderQuotesView);
+  document.getElementById("quoteDateFilter").addEventListener("change", renderQuotesView);
 });
 
 window.__renderQuotesView = renderQuotesView;

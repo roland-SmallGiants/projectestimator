@@ -133,12 +133,19 @@
 
   <!-- Quotes archive -->
   <div id="quotesView" style="display:none;">
-    <section class="card">
-      <h2>Quote Archive</h2>
-      <div class="sub">Read-only past quotes.</div>
-      <input type="text" id="quoteSearchInput" placeholder="Filter by client name…" list="quoteClientOptions" style="margin-top:10px; max-width:260px;">
+    <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:8px;">
+      <input type="text" id="quoteSearchInput" placeholder="Filter by client name…" list="quoteClientOptions" style="max-width:220px;">
       <datalist id="quoteClientOptions"></datalist>
-    </section>
+      <select id="quoteDateFilter" style="max-width:160px;">
+        <option value="all">All time</option>
+        <option value="7d">Last 7 days</option>
+        <option value="14d">Last 2 weeks</option>
+        <option value="1m">Last month</option>
+        <option value="3m">Last 3 months</option>
+        <option value="ytd">This year</option>
+        <option value="ly">Last year</option>
+      </select>
+    </div>
     <div id="quoteArchiveList" style="display:flex; flex-direction:column; gap:10px; margin-top:16px;"></div>
   </div>
 
