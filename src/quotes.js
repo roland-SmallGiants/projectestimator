@@ -49,7 +49,6 @@ export function buildArchiveRowHtml(id, embedOutcome) {
   const dateStr = formatDateTime(q.savedAt);
   const editedStr = q.editedAt ? formatDateTime(q.editedAt) : "";
   const isOpen = state.openArchiveDetails.has(id);
-  const isEditing = state.editingQuotes.has(id);
 
   const perCat = {};
   (q.items || []).forEach((it) => {
@@ -96,7 +95,7 @@ export function buildArchiveRowHtml(id, embedOutcome) {
         </div>
       </div>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        ${isOpen ? `<button class="btn ghost small archive-edit-toggle">${isEditing ? "Cancel" : "Edit"}</button>
+        ${isOpen ? `<button class="btn ghost small archive-load-estimator">Continue in Estimator</button>
         <button class="btn ghost small archive-delete" style="color:var(--rose);">Delete</button>` : ""}
       </div>
     </div>
@@ -106,10 +105,7 @@ export function buildArchiveRowHtml(id, embedOutcome) {
         <thead><tr><th>Category</th><th style="width:140px">Role</th><th class="numc" style="width:110px">Est. Hours</th><th class="num" style="width:120px">Est. Cost (\u20ac)</th></tr></thead>
         <tbody>${catRows}<tr class="summary-row final"><td>Final quoted price</td><td></td><td class="numc">${q.grandHours.toLocaleString("nl-NL")}</td><td class="num">${moneyPlain(q.finalPrice)}</td></tr></tbody>
       </table>
-      ${!isEditing ? `<div class="row-actions" style="justify-content:${embedOutcome ? "space-between" : "flex-start"}; margin-top:14px;">
-        <div style="display:flex; gap:10px;"><button class="btn ghost small archive-load-estimator">Continue in Estimator</button></div>
-        ${embedOutcome ? outcomeChips : ""}
-      </div>` : ""}
+      ${embedOutcome ? `<div class="row-actions" style="justify-content:flex-end; margin-top:14px;">${outcomeChips}</div>` : ""}
     </div>
   </div>${embedOutcome ? "" : `<div class="archive-status-block" data-id="${id}"><span class="sub">Outcome</span>${outcomeChips}</div>`}`;
 }
