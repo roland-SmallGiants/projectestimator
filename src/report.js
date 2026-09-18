@@ -1,5 +1,5 @@
 import { state, CATEGORIES, rateForRole } from "./state.js";
-import { esc, money, computeNiceAxis, formatAxisValue, formatDate, avatarColorFor } from "./utils.js";
+import { esc, money, computeNiceAxis, formatAxisValue, formatDate } from "./utils.js";
 
 export function computeMonthlyRevenueData() {
   const months = {};
@@ -97,6 +97,21 @@ function wireChartBarTooltips(wrap) {
 }
 
 const COLORS = { pending: "#9C9AAE", won: "#FFBA30", lost: "#D64545" };
+// Same tonal family as the Revenue chart (amber/gray/rose) instead of the
+// brighter rainbow used for person avatars, so this chart feels consistent
+// with the rest of the Report page.
+const ROLE_COLORS = ["#FFBA30", "#9C9AAE", "#D64545", "#C99A3D", "#6B6A78", "#E8935C"];
+const ROLE_LABEL_TEXT_COLORS = ["#1C1B33", "#1C1B33", "#fff", "#1C1B33", "#fff", "#1C1B33"]; // matches ROLE_COLORS by index
+function roleColorFor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) % ROLE_COLORS.length;
+  return ROLE_COLORS[Math.abs(hash) % ROLE_COLORS.length];
+}
+function roleLabelTextColorFor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) % ROLE_COLORS.length;
+  return ROLE_LABEL_TEXT_COLORS[Math.abs(hash) % ROLE_COLORS.length];
+}
 const LABEL_TEXT_COLOR = { pending: "#1C1B33", won: "#1C1B33", lost: "#fff" };
 
 function chartShell(colors, gridLines, bars) {
@@ -428,11 +443,11 @@ function metricAxisLabel(val) {
 function metricLabelCompact(val, withCurrency) {
   return state.hoursPerRoleMetric === "revenue" ? formatAxisValue(val, withCurrency) : val.toLocaleString("nl-NL") + "h";
 }
-function buildBarLabel(x, barW, y, h, val, fontSize) {
+function buildBarLabel(x, barW, y, h, val, fontSize, insideTextColor) {
   if (val <= 0) return "";
   const fitsInside = h >= fontSize + 10; // enough vertical room to center the label inside the bar
   if (fitsInside) {
-    return `<text x="${x + barW / 2}" y="${y + h / 2 + fontSize * 0.35}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="#1C1B33" pointer-events="none">${metricLabelCompact(val, true)}</text>`;
+    return `<text x="${x + barW / 2}" y="${y + h / 2 + fontSize * 0.35}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="${insideTextColor || "#1C1B33"}" pointer-events="none">${metricLabelCompact(val, true)}</text>`;
   }
   return `<text x="${x + barW / 2}" y="${y - 5}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="var(--ink)" pointer-events="none">${metricLabelCompact(val, false)}</text>`;
 }
@@ -452,16 +467,16 @@ function renderMultiRoleChart(wrap, months, keys, rolesToShow, padLeft, padBotto
     const parts = rolesToShow.map((role, j) => {
       const val = metricValue(m, role);
       if (val <= 0) return "";
-      const color = avatarColorFor(role);
+      const color = roleColorFor(role);
       const h = (val / niceMax) * plotH, x = groupX + j * (barW + gap), y = padTop + plotH - h;
       const rect = `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${esc(role)}: ${metricLabel(val)}"></rect>`;
       const fontSize = rolesToShow.length <= 2 ? 10 : 8;
-      const label = buildBarLabel(x, barW, y, h, val, fontSize);
+      const label = buildBarLabel(x, barW, y, h, val, fontSize, roleLabelTextColorFor(role));
       return rect + label;
     }).join("");
     return `${parts}<text x="${padLeft + i * groupW + groupW / 2}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
   }).join("");
-  const legend = rolesToShow.map((r) => `<span><span style="display:inline-block; width:10px; height:10px; background:${avatarColorFor(r)}; border-radius:2px; margin-right:5px;"></span>${esc(r)}</span>`).join("");
+  const legend = rolesToShow.map((r) => `<span><span style="display:inline-block; width:10px; height:10px; background:${roleColorFor(r)}; border-radius:2px; margin-right:5px;"></span>${esc(r)}</span>`).join("");
   wrap.innerHTML = `<div style="display:flex; gap:14px; margin-bottom:8px; font-size:12px; color:var(--ink-soft); flex-wrap:wrap;">${legend}</div>
     <div style="position:relative;">
       <svg viewBox="0 0 900 260" style="width:100%; height:auto; display:block;">${gridLines}${bars}</svg>
@@ -510,7 +525,7 @@ export function renderHoursPerRoleChart() {
   }
 
   if (selectedRole) {
-    const color = avatarColorFor(selectedRole);
+    const color = roleColorFor(selectedRole);
     const rawMax = Math.max(1, ...keys.map((k) => metricValue(months[k], selectedRole)));
     const { niceMax, step } = computeNiceAxis(rawMax, 5);
     const barW = Math.min(48, groupW * 0.5);
@@ -522,7 +537,7 @@ export function renderHoursPerRoleChart() {
       const m = months[k], val = metricValue(m, selectedRole), x = padLeft + i * groupW + (groupW - barW) / 2;
       const h = (val / niceMax) * plotH, y = padTop + plotH - h;
       const rect = val > 0 ? `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${esc(selectedRole)}: ${metricLabel(val)}"></rect>` : "";
-      const label = buildBarLabel(x, barW, y, h, val, 10.5);
+      const label = buildBarLabel(x, barW, y, h, val, 10.5, roleLabelTextColorFor(selectedRole));
       return `${rect}${label}<text x="${padLeft + i * groupW + groupW / 2}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
     }).join("");
     wrap.innerHTML = `<div style="position:relative;"><svg viewBox="0 0 900 260" style="width:100%; height:auto; display:block;">${gridLines}${bars}</svg><div class="chart-tooltip" style="display:none; position:absolute; pointer-events:none; background:var(--ink); color:var(--bg-raised); font-size:12px; padding:6px 10px; border-radius:6px; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,0.2); z-index:10;"></div></div>`;
