@@ -162,7 +162,7 @@ export function renderRateCard() {
       </div>`).join("");
     return `<tr class="role-drag-item" draggable="true" data-id="${id}">
       <td><span style="display:flex; align-items:center; gap:8px;"><span class="sub" style="cursor:grab; user-select:none;">\u283f</span><input type="text" class="role-name" value="${esc(r.role)}"></span></td>
-      <td class="numc"><input type="number" class="role-rate" value="${r.rate}" min="0" step="1"></td>
+      <td class="numc"><input type="number" class="role-rate" value="${r.rate}" min="0" step="1" style="text-align:right; width:calc(100% - 6px); margin-right:6px;"></td>
       <td>${rows}</td>
       <td><button class="btn small danger role-del">\u2715</button></td>
     </tr>`;
