@@ -15,7 +15,24 @@ import { setStatus, showView, wireNav } from "./nav.js";
 
 async function boot() {
   ensureModalRoot();
-  await bootstrapDefaultsIfEmpty().catch((e) => setStatus("Setup error: " + e.message, true));
+
+  // Wire up everything that only depends on local state/DOM first, so the
+  // app is usable (welcome screen, nav, drafts shell) even if Firestore is
+  // slow, unreachable, or firebase-config.js still has placeholder values.
+  // Anything that needs the network happens after, and failures there are
+  // surfaced as a status message instead of silently stalling the UI.
+  initWelcomeScreen();
+  wireNav();
+  wireEstimatorActions();
+  wireDraftsActions();
+  wireChartToggle();
+  wireAddRole();
+  wireAddDiscipline();
+  wireTeamAdd();
+  window.addEventListener("open-draft", (e) => openDraft(e.detail.id));
+  window.addEventListener("beforeunload", () => { if (state.currentDraftId) releaseLock(state.currentDraftId); });
+
+  bootstrapDefaultsIfEmpty().catch((e) => setStatus("Setup error: " + e.message + " — check src/firebase-config.js has your real project values.", true));
 
   db.doc("settings/main").onSnapshot((snap) => {
     if (snap.exists) state.settings = { ...state.settings, ...snap.data() };
@@ -23,7 +40,7 @@ async function boot() {
     renderCurrentUserIndicator();
     if (document.getElementById("adminView").style.display !== "none") renderAdminView();
     setStatus("Synced, shared live with your team.");
-  }, (e) => setStatus("Sync error (settings): " + e.code, true));
+  }, (e) => setStatus("Sync error (settings): " + e.code + " — check src/firebase-config.js has your real project values.", true));
 
   subscribeAdminCatalogs(() => {
     if (state.currentDraftId) renderEstimatorView();
@@ -46,18 +63,6 @@ async function boot() {
     if (document.getElementById("quotesView").style.display !== "none") renderQuotesView();
     if (document.getElementById("reportView").style.display !== "none") renderReport();
   });
-
-  initWelcomeScreen();
-  wireNav();
-  wireEstimatorActions();
-  wireDraftsActions();
-  wireChartToggle();
-  wireAddRole();
-  wireAddDiscipline();
-  wireTeamAdd();
-
-  window.addEventListener("open-draft", (e) => openDraft(e.detail.id));
-  window.addEventListener("beforeunload", () => { if (state.currentDraftId) releaseLock(state.currentDraftId); });
 }
 
 async function openDraft(id) {
