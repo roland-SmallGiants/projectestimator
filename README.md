@@ -19,6 +19,23 @@ timeout) so only one person edits it at a time; everyone else sees it
 read-only with a banner showing who's in it. See the code comments in
 `src/drafts.js` for the exact mechanics and trade-offs.
 
+## Hosting with Docker
+
+This is a static site (no build step, no server-side code), so any static
+file server works, including a Docker container. A minimal `Dockerfile` and
+`docker-compose.yml` are included:
+
+```
+docker compose up --build
+```
+
+This serves the app at `http://localhost:8086`. Note this only relocates
+*where the frontend files are served from* — the database (Firestore) is
+still Google's cloud infrastructure regardless of where the HTML/JS lives,
+so the container still needs outbound internet access (from whoever's
+browser is using it) to reach Firebase. This setup does not make the app
+fully self-hosted/offline.
+
 ## Setup
 
 1. **Create a Firebase project** at [console.firebase.google.com](https://console.firebase.google.com).

@@ -1,0 +1,6 @@
+services:
+  estimator:
+    build: .
+    ports:
+      - "8086:80"
+    restart: unless-stopped
