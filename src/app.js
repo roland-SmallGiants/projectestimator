@@ -146,13 +146,36 @@ function wireEstimatorActions() {
   };
 }
 
+function renderQuoteClientOptions() {
+  const list = document.getElementById("quoteClientOptions");
+  if (!list) return;
+  const names = new Set();
+  Object.values(state.quotes || {}).forEach((q) => {
+    if (q.clientName && q.clientName !== "(no client name)") names.add(q.clientName);
+  });
+  list.innerHTML = [...names].sort((a, b) => a.localeCompare(b)).map((n) => `<option value="${esc(n)}"></option>`).join("");
+}
+
 function renderQuotesView() {
   const wrap = document.getElementById("quoteArchiveList");
   const query = (document.getElementById("quoteSearchInput").value || "").trim().toLowerCase();
   let ids = Object.keys(state.quotes).sort((a, b) => new Date(state.quotes[b].savedAt) - new Date(state.quotes[a].savedAt));
   if (query) ids = ids.filter((id) => (state.quotes[id].clientName || "").toLowerCase().includes(query));
-  wrap.innerHTML = ids.length ? ids.map((id) => buildArchiveRowHtml(id, false)).join("") : `<div class="task-empty">No quotes saved yet.</div>`;
+
+  const pendingIds = ids.filter((id) => state.quotes[id].status !== "won" && state.quotes[id].status !== "lost");
+  const decidedIds = ids.filter((id) => state.quotes[id].status === "won" || state.quotes[id].status === "lost");
+
+  const section = (title, list) => `<section class="card">
+    <h2 style="font-size:15px;">${title}</h2>
+    <div class="sub">${list.length} quote${list.length === 1 ? "" : "s"}</div>
+    <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
+      ${list.length ? list.map((id) => buildArchiveRowHtml(id)).join("") : `<div class="task-empty">No quotes here yet.</div>`}
+    </div>
+  </section>`;
+
+  wrap.innerHTML = section("Pending", pendingIds) + section("Won / Lost", decidedIds);
   wireArchiveRows(wrap, renderQuotesView);
+  renderQuoteClientOptions();
 }
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("quoteSearchInput").addEventListener("input", renderQuotesView);

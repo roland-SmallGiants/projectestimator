@@ -43,7 +43,7 @@ export async function saveCurrentDraftAsQuote() {
   state.currentDraftId = null;
 }
 
-export function buildArchiveRowHtml(id, embedOutcome) {
+export function buildArchiveRowHtml(id) {
   const q = state.quotes[id];
   if (!q) return "";
   const dateStr = formatDateTime(q.savedAt);
@@ -81,7 +81,7 @@ export function buildArchiveRowHtml(id, embedOutcome) {
       <button type="button" class="chip status-won ${q.status === "won" ? "on" : ""}" data-status="won">Won</button>
       <button type="button" class="chip status-lost ${q.status === "lost" ? "on" : ""}" data-status="lost">Lost</button>
     </div>
-    ${embedOutcome && statusDateStr ? `<span class="sub">${q.status === "won" ? "Won" : "Lost"} on ${statusDateStr}</span>` : ""}
+    ${statusDateStr ? `<span class="sub">${q.status === "won" ? "Won" : "Lost"} on ${statusDateStr}</span>` : ""}
   </div>`;
 
   return `<div class="archive-row" data-id="${id}">
@@ -105,9 +105,9 @@ export function buildArchiveRowHtml(id, embedOutcome) {
         <thead><tr><th>Category</th><th style="width:140px">Role</th><th class="numc" style="width:110px">Est. Hours</th><th class="num" style="width:120px">Est. Cost (\u20ac)</th></tr></thead>
         <tbody>${catRows}<tr class="summary-row final"><td>Final quoted price</td><td></td><td class="numc">${q.grandHours.toLocaleString("nl-NL")}</td><td class="num">${moneyPlain(q.finalPrice)}</td></tr></tbody>
       </table>
-      ${embedOutcome ? `<div class="row-actions" style="justify-content:flex-end; margin-top:14px;">${outcomeChips}</div>` : ""}
+      <div class="row-actions" style="justify-content:flex-end; margin-top:14px;">${outcomeChips}</div>
     </div>
-  </div>${embedOutcome ? "" : `<div class="archive-status-block" data-id="${id}"><span class="sub">Outcome</span>${outcomeChips}</div>`}`;
+  </div>`;
 }
 
 export function wireArchiveRows(wrap, rerender) {
@@ -136,8 +136,7 @@ export function wireArchiveRows(wrap, rerender) {
   });
   wrap.querySelectorAll(".status-won, .status-lost").forEach((btn) => {
     btn.onclick = async () => {
-      const container = btn.closest(".archive-status-block") || btn.closest(".archive-row");
-      const rowId = container.dataset.id;
+      const rowId = btn.closest(".archive-row").dataset.id;
       const newStatus = btn.dataset.status;
       const current = state.quotes[rowId] && state.quotes[rowId].status;
       const nextStatus = current === newStatus ? null : newStatus;

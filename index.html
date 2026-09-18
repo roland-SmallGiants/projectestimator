@@ -136,7 +136,8 @@
     <section class="card">
       <h2>Quote Archive</h2>
       <div class="sub">Read-only past quotes.</div>
-      <input type="text" id="quoteSearchInput" placeholder="Filter by client name…" style="margin-top:10px; max-width:260px;">
+      <input type="text" id="quoteSearchInput" placeholder="Filter by client name…" list="quoteClientOptions" style="margin-top:10px; max-width:260px;">
+      <datalist id="quoteClientOptions"></datalist>
     </section>
     <div id="quoteArchiveList" style="display:flex; flex-direction:column; gap:10px; margin-top:16px;"></div>
   </div>

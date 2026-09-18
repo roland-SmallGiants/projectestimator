@@ -68,7 +68,6 @@ td { padding:8px; border-bottom:1px solid var(--line); }
 .archive-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
 .archive-detail { display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
 .archive-detail.open { display:block; }
-.archive-status-block { border:1px solid var(--line); border-radius:8px; background:var(--bg-raised); padding:10px 14px; margin-top:8px; }
 
 .report-col { background:var(--bg-raised); border:1px solid var(--line); border-radius:10px; padding:18px; }
 .report-col h3 { font-weight:700; font-size:15px; margin:0 0 4px; }

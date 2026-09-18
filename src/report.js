@@ -221,7 +221,7 @@ export function renderReportColumns() {
   wrap.innerHTML = columns.map((col) => {
     const list = grouped[col.key];
     const total = list.reduce((s, id) => s + (state.quotes[id].finalPrice || 0), 0);
-    const rows = list.length ? `<div class="report-rows">${list.map((id) => buildArchiveRowHtml(id, true)).join("")}</div>` : `<div class="task-empty">No quotes here yet.</div>`;
+    const rows = list.length ? `<div class="report-rows">${list.map((id) => buildArchiveRowHtml(id)).join("")}</div>` : `<div class="task-empty">No quotes here yet.</div>`;
     return `<div class="report-col"><h3 style="color:${col.accent};">${col.label}</h3><div class="report-col-total">${list.length} quote${list.length === 1 ? "" : "s"} \u00b7 ${money(total)}</div>${rows}</div>`;
   }).join("");
   wireArchiveRows(wrap, renderReportColumns);
