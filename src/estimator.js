@@ -114,7 +114,10 @@ export function renderItems() {
   const items = Object.entries(state.draftItems)
     .filter(([, it]) => it.category === state.activeTab && !it.excluded)
     .sort((a, b) => (a[1].order ?? 0) - (b[1].order ?? 0));
-  const roleOptions = sortedRateIds().map((id) => state.rateCard[id].role).filter(Boolean);
+  const roleOptions = sortedRateIds()
+    .map((id) => state.rateCard[id])
+    .filter((r) => r && r.role && (!Array.isArray(r.categories) || r.categories.length === 0 || r.categories.includes(state.activeTab)))
+    .map((r) => r.role);
 
   body.innerHTML = items.map(([id, it]) => {
     const options = (it.role && !roleOptions.includes(it.role)) ? [...roleOptions, it.role] : roleOptions;
