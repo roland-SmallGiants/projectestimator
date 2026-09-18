@@ -90,7 +90,7 @@ td { padding:8px; border-bottom:1px solid var(--line); }
 .edit-timeline-item .change-summary { color:var(--ink-soft); font-size:11.5px; font-style:italic; }
 .history-link { color:var(--accent); font-size:12px; font-weight:600; cursor:pointer; text-decoration:none; margin-left:8px; }
 
-.number-stepper { display:inline-flex; align-items:stretch; width:100%; }
+.number-stepper { display:flex; align-items:stretch; width:66px; margin-left:auto; margin-right:0; }
 .number-stepper input[type="number"] { text-align:center; border-radius:0; border-left:none; border-right:none; width:auto; flex:1 1 0%; min-width:0; padding:6px 2px; }
 .number-stepper-btn { all:unset; width:20px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:var(--line); color:var(--ink); cursor:pointer; font-weight:700; font-size:13px; }
 .number-stepper-btn:first-child { border-radius:6px 0 0 6px; }

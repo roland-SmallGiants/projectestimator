@@ -299,7 +299,7 @@ export function renderDisciplinesAdmin() {
               const applicable = isApplicable(r);
               return `<td class="numc">${applicable
                 ? `<input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5">`
-                : `<input type="text" value="\u2014" disabled style="text-align:center;" title="${esc(r.role)} doesn't apply to ${esc(d.name)}">`}</td>`;
+                : `<span title="${esc(r.role)} doesn't apply to ${esc(d.name)}"></span>`}</td>`;
             }).join("")}
             <td><button class="btn small danger disc-task-del" data-item-id="${tid}">\u2715</button></td>
           </tr>`).join("") || `<tr><td colspan="${colCount}" class="sub">No tasks yet.</td></tr>`}
