@@ -1,4 +1,4 @@
-import { state } from "./state.js";
+import { state, CATEGORIES } from "./state.js";
 import { esc, money, computeNiceAxis, formatAxisValue, formatDate } from "./utils.js";
 import { buildArchiveRowHtml, wireArchiveRows } from "./quotes.js";
 
@@ -259,33 +259,61 @@ export function computeTaskHoursComparison() {
 export function renderHoursComparison() {
   const body = document.getElementById("hoursComparisonBody");
   if (!body) return;
-  const rows = computeTaskHoursComparison();
-  if (!rows.length) { body.innerHTML = `<tr><td colspan="5" class="task-empty">No tasks yet.</td></tr>`; return; }
+  const allRows = computeTaskHoursComparison().filter((r) => r.entries.length > 0); // hide tasks never used in a quote
+  if (!allRows.length) { body.innerHTML = `<tr><td colspan="6" class="task-empty">No tasks used in any quote yet.</td></tr>`; return; }
 
-  body.innerHTML = rows.map((r) => {
-    const key = `${r.category}::${r.task}`;
-    const isOpen = state.expandedHoursComparisonTasks.has(key);
-    const hasEntries = r.entries.length > 0;
-    const avgActual = hasEntries ? r.entries.reduce((s, e) => s + e.hours, 0) / r.entries.length : null;
-    const variance = avgActual !== null ? avgActual - r.defaultHours : null;
-    const varianceStr = variance === null ? "\u2014" : (variance > 0 ? "+" : "") + variance.toLocaleString("nl-NL", { maximumFractionDigits: 1 });
-    const varianceColor = variance === null ? "var(--ink-soft)" : variance > 0 ? "var(--rose)" : variance < 0 ? "var(--accent)" : "var(--ink-soft)";
+  // Attach avg actual + variance up front so we can rank by it.
+  const withStats = allRows.map((r) => {
+    const avgActual = r.entries.reduce((s, e) => s + e.hours, 0) / r.entries.length;
+    const variance = avgActual - r.defaultHours;
+    return { ...r, avgActual, variance };
+  });
 
-    const mainRow = `<tr class="summary-cat-row hours-comparison-row" data-key="${esc(key)}" style="cursor:${hasEntries ? "pointer" : "default"};">
-      <td><span style="display:inline-block; width:14px;">${hasEntries ? (isOpen ? "\u25be" : "\u25b8") : ""}</span>${esc(r.task)} <span class="sub">(${esc(r.category)})</span></td>
-      <td class="numc">${r.defaultHours.toLocaleString("nl-NL")}</td>
-      <td class="numc">${avgActual === null ? "\u2014" : avgActual.toLocaleString("nl-NL", { maximumFractionDigits: 1 })}</td>
-      <td class="numc">${r.entries.length}</td>
-      <td class="numc" style="color:${varianceColor};">${varianceStr}</td>
-    </tr>`;
-    if (!isOpen || !hasEntries) return mainRow;
-    const detailRows = r.entries.map((e) => `<tr class="summary-task-row">
-        <td style="padding-left:26px; font-size:12.5px; color:var(--ink-soft);">${esc(e.clientName || "(no client name)")} \u00b7 ${formatDate(e.savedAt)}</td>
-        <td class="numc" style="font-size:12.5px; color:var(--ink-soft);">${r.defaultHours.toLocaleString("nl-NL")}</td>
-        <td class="numc" style="font-size:12.5px; color:var(--ink-soft);">${e.hours.toLocaleString("nl-NL")}</td>
-        <td></td><td></td>
-      </tr>`).join("");
-    return mainRow + detailRows;
+  const canonicalOrder = CATEGORIES();
+  const categories = [...new Set(withStats.map((r) => r.category))]
+    .sort((a, b) => {
+      const ai = canonicalOrder.indexOf(a), bi = canonicalOrder.indexOf(b);
+      if (ai === -1 && bi === -1) return a.localeCompare(b);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+
+  body.innerHTML = categories.map((category) => {
+    const rowsInCat = withStats
+      .filter((r) => r.category === category)
+      .sort((a, b) => Math.abs(a.variance) - Math.abs(b.variance)); // smallest deviation first
+
+    const headerRow = `<tr><td colspan="6" style="font-weight:700; color:var(--accent); padding-top:14px;">${esc(category)}</td></tr>`;
+
+    const taskRows = rowsInCat.map((r) => {
+      const key = `${r.category}::${r.task}`;
+      const isOpen = state.expandedHoursComparisonTasks.has(key);
+      const { avgActual, variance } = r;
+      const variancePct = r.defaultHours > 0 ? (variance / r.defaultHours) * 100 : null;
+      const varianceStr = (variance > 0 ? "+" : "") + variance.toLocaleString("nl-NL", { maximumFractionDigits: 1 });
+      const variancePctStr = variancePct === null ? "\u2014" : (variancePct > 0 ? "+" : "") + variancePct.toLocaleString("nl-NL", { maximumFractionDigits: 0 }) + "%";
+      const varianceColor = variance > 0 ? "var(--rose)" : variance < 0 ? "var(--accent)" : "var(--ink-soft)";
+
+      const mainRow = `<tr class="summary-cat-row hours-comparison-row" data-key="${esc(key)}" style="cursor:pointer;">
+        <td><span style="display:inline-block; width:14px;">${isOpen ? "\u25be" : "\u25b8"}</span>${esc(r.task)}</td>
+        <td class="numc">${r.defaultHours.toLocaleString("nl-NL")}</td>
+        <td class="numc">${avgActual.toLocaleString("nl-NL", { maximumFractionDigits: 1 })}</td>
+        <td class="numc">${r.entries.length}</td>
+        <td class="numc" style="color:${varianceColor};">${varianceStr}</td>
+        <td class="numc" style="color:${varianceColor};">${variancePctStr}</td>
+      </tr>`;
+      if (!isOpen) return mainRow;
+      const detailRows = r.entries.map((e) => `<tr class="summary-task-row">
+          <td style="padding-left:26px; font-size:12.5px; color:var(--ink-soft);">${esc(e.clientName || "(no client name)")} \u00b7 ${formatDate(e.savedAt)}</td>
+          <td class="numc" style="font-size:12.5px; color:var(--ink-soft);">${r.defaultHours.toLocaleString("nl-NL")}</td>
+          <td class="numc" style="font-size:12.5px; color:var(--ink-soft);">${e.hours.toLocaleString("nl-NL")}</td>
+          <td></td><td></td><td></td>
+        </tr>`).join("");
+      return mainRow + detailRows;
+    }).join("");
+
+    return headerRow + taskRows;
   }).join("");
 
   body.querySelectorAll(".hours-comparison-row").forEach((tr) => {
