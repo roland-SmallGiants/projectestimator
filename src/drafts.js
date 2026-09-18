@@ -104,7 +104,7 @@ export async function createDraft(clientName, sourceQuoteId) {
   const ref = await db.collection("drafts").add({
     clientName: clientName || "",
     projectDescription: "",
-    disciplineMode: "single",
+    disciplineMode: null,
     disciplines: [],
     disciplineModeChosen: false,
     createdBy: state.currentUser,

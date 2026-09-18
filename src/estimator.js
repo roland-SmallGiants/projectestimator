@@ -56,6 +56,8 @@ export function renderDisciplineSelector() {
   const ro = isReadOnly();
   const wrap = document.getElementById("disciplineChips");
   const selected = d.disciplines || [];
+
+  wrap.style.display = d.disciplineMode ? "" : "none";
   wrap.innerHTML = CATEGORIES().map((c) =>
     `<button type="button" class="chip ${selected.includes(c) ? "on" : ""}" data-cat="${esc(c)}" ${ro ? "disabled" : ""}>${esc(c)}</button>`
   ).join("");
