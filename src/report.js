@@ -392,7 +392,7 @@ export function renderNeverUsedSection() {
 
 function computeHoursPerRoleByMonth() {
   const months = {}; // key -> { label, byRoleHours: {role: hours}, byRoleRevenue: {role: euros} }
-  Object.values(state.quotes || {}).forEach((q) => {
+  Object.values(state.quotes || {}).filter((q) => q.status === "won").forEach((q) => {
     const d = q.savedAt ? new Date(q.savedAt) : null;
     if (!d || isNaN(d)) return;
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -425,6 +425,17 @@ function metricLabel(val) {
 function metricAxisLabel(val) {
   return state.hoursPerRoleMetric === "revenue" ? formatAxisValue(val) : val.toLocaleString("nl-NL") + "h";
 }
+function metricLabelCompact(val, withCurrency) {
+  return state.hoursPerRoleMetric === "revenue" ? formatAxisValue(val, withCurrency) : val.toLocaleString("nl-NL") + "h";
+}
+function buildBarLabel(x, barW, y, h, val, fontSize) {
+  if (val <= 0) return "";
+  const fitsInside = h >= fontSize + 10; // enough vertical room to center the label inside the bar
+  if (fitsInside) {
+    return `<text x="${x + barW / 2}" y="${y + h / 2 + fontSize * 0.35}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="#1C1B33" pointer-events="none">${metricLabelCompact(val, true)}</text>`;
+  }
+  return `<text x="${x + barW / 2}" y="${y - 5}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="var(--ink)" pointer-events="none">${metricLabelCompact(val, false)}</text>`;
+}
 
 function renderMultiRoleChart(wrap, months, keys, rolesToShow, padLeft, padBottom, padTop, padRight, plotW, plotH, groupW) {
   const rawMax = Math.max(1, ...keys.flatMap((k) => rolesToShow.map((r) => metricValue(months[k], r))));
@@ -445,7 +456,7 @@ function renderMultiRoleChart(wrap, months, keys, rolesToShow, padLeft, padBotto
       const h = (val / niceMax) * plotH, x = groupX + j * (barW + gap), y = padTop + plotH - h;
       const rect = `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${esc(role)}: ${metricLabel(val)}"></rect>`;
       const fontSize = rolesToShow.length <= 2 ? 10 : 8;
-      const label = val > 0 ? `<text x="${x + barW / 2}" y="${y - 5}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="var(--ink)" pointer-events="none">${metricLabel(val)}</text>` : "";
+      const label = buildBarLabel(x, barW, y, h, val, fontSize);
       return rect + label;
     }).join("");
     return `${parts}<text x="${padLeft + i * groupW + groupW / 2}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
@@ -511,7 +522,7 @@ export function renderHoursPerRoleChart() {
       const m = months[k], val = metricValue(m, selectedRole), x = padLeft + i * groupW + (groupW - barW) / 2;
       const h = (val / niceMax) * plotH, y = padTop + plotH - h;
       const rect = val > 0 ? `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${esc(selectedRole)}: ${metricLabel(val)}"></rect>` : "";
-      const label = val > 0 ? `<text x="${x + barW / 2}" y="${y - 6}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)" pointer-events="none">${metricLabel(val)}</text>` : "";
+      const label = buildBarLabel(x, barW, y, h, val, 10.5);
       return `${rect}${label}<text x="${padLeft + i * groupW + groupW / 2}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
     }).join("");
     wrap.innerHTML = `<div style="position:relative;"><svg viewBox="0 0 900 260" style="width:100%; height:auto; display:block;">${gridLines}${bars}</svg><div class="chart-tooltip" style="display:none; position:absolute; pointer-events:none; background:var(--ink); color:var(--bg-raised); font-size:12px; padding:6px 10px; border-radius:6px; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,0.2); z-index:10;"></div></div>`;

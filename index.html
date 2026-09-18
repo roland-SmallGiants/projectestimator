@@ -187,23 +187,21 @@
       </table>
     </section>
     <section class="card">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
-        <div>
-          <h2 style="font-size:15px;">Hours quoted per role</h2>
-          <div class="sub">Total hours quoted each month, by role.</div>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-          <select id="hoursPerRoleSelect" style="max-width:200px;">
-            <option value="">All roles</option>
-          </select>
-          <span class="sub" id="hoursPerRoleCompareLabel" style="display:none;">vs.</span>
-          <select id="hoursPerRoleCompareSelect" style="max-width:200px; display:none;">
-            <option value="">Compare to\u2026</option>
-          </select>
-          <div class="chips small" id="hoursPerRoleMetricToggle">
-            <button type="button" class="chip on" data-metric="hours">Hours</button>
-            <button type="button" class="chip" data-metric="revenue">Revenue</button>
-          </div>
+      <div>
+        <h2 style="font-size:15px;">Hours quoted per role</h2>
+        <div class="sub">Total hours from won quotes each month, by role.</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:10px;">
+        <select id="hoursPerRoleSelect" style="max-width:200px; flex-shrink:0;">
+          <option value="">All roles</option>
+        </select>
+        <span class="sub" id="hoursPerRoleCompareLabel" style="display:none; flex-shrink:0;">vs.</span>
+        <select id="hoursPerRoleCompareSelect" style="max-width:200px; display:none; flex-shrink:0;">
+          <option value="">Compare to\u2026</option>
+        </select>
+        <div class="chips small" id="hoursPerRoleMetricToggle" style="flex-wrap:nowrap; flex-shrink:0;">
+          <button type="button" class="chip on" data-metric="hours">Hours</button>
+          <button type="button" class="chip" data-metric="revenue">Revenue</button>
         </div>
       </div>
       <div id="hoursPerRoleChart" style="margin-top:14px;"></div>

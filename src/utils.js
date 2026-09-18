@@ -53,10 +53,11 @@ export function computeNiceAxis(maxVal, tickCount) {
   return { niceMax: step * numSteps, step };
 }
 
-export function formatAxisValue(v) {
-  if (v >= 1000000) { const m = v / 1000000; return "\u20ac" + (Number.isInteger(m) ? m : m.toFixed(1)) + "M"; }
-  if (v >= 1000) { const k = v / 1000; return "\u20ac" + (Number.isInteger(k) ? k : k.toFixed(1)) + "k"; }
-  return "\u20ac" + Math.round(v);
+export function formatAxisValue(v, withCurrency = true) {
+  const prefix = withCurrency ? "\u20ac" : "";
+  if (v >= 1000000) { const m = v / 1000000; return prefix + (Number.isInteger(m) ? m : m.toFixed(1)) + "M"; }
+  if (v >= 1000) { const k = v / 1000; return prefix + (Number.isInteger(k) ? k : k.toFixed(1)) + "K"; }
+  return prefix + Math.round(v);
 }
 
 export function formatDateTime(iso) {
