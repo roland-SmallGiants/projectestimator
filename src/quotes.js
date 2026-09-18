@@ -97,7 +97,7 @@ export function buildArchiveRowHtml(id) {
       <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
         ${outcomeChips}
         ${isOpen ? `<div style="display:flex; gap:10px;">
-          <button class="btn ghost small archive-load-estimator">Edit</button>
+          ${q.status === "won" || q.status === "lost" ? "" : `<button class="btn ghost small archive-load-estimator">Edit</button>`}
           <button class="btn ghost small archive-delete" style="color:var(--rose);">Delete</button>
         </div>` : ""}
       </div>
@@ -148,6 +148,8 @@ export function wireArchiveRows(wrap, rerender) {
   wrap.querySelectorAll(".archive-load-estimator").forEach((btn) => {
     btn.onclick = () => {
       const id = btn.closest(".archive-row").dataset.id;
+      const q = state.quotes[id];
+      if (q && (q.status === "won" || q.status === "lost")) return; // Won/Lost quotes are locked from further edits.
       openConfirm(
         "Continue this quote in the Estimator?",
         "This opens the quote as an in-progress draft so you (and only you, while you're in it) can keep editing it. Saving it again will update this same archived quote in place \u2014 stamped as edited \u2014 rather than creating a new one.",
