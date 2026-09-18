@@ -160,11 +160,11 @@ export function wireAutocomplete(inputEl, dropdownEl, getOptions, onSelect) {
   });
 }
 
-export function wireNumberStepper(input) {
+export function wireNumberStepper(input, options = {}) {
   if (!input || input.dataset.stepperWired) return;
   input.dataset.stepperWired = "1";
   const wrap = document.createElement("span");
-  wrap.className = "number-stepper";
+  wrap.className = "number-stepper" + (options.fullWidth ? " number-stepper-full" : "");
   const minus = document.createElement("button");
   minus.type = "button"; minus.className = "number-stepper-btn"; minus.textContent = "\u2212";
   const plus = document.createElement("button");

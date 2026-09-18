@@ -171,7 +171,7 @@ export function renderRateCard() {
     const rateInput = tr.querySelector(".role-rate");
     nameInput.onchange = () => db.collection("rate_card").doc(id).update({ role: nameInput.value }).catch(() => {});
     rateInput.onchange = () => db.collection("rate_card").doc(id).update({ rate: Number(rateInput.value) || 0 }).catch(() => {});
-    wireNumberStepper(rateInput);
+    wireNumberStepper(rateInput, { fullWidth: true });
     tr.querySelector(".role-del").onclick = () => {
       openConfirm(
         "Delete this role?",
