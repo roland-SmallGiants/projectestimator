@@ -95,7 +95,7 @@ export function buildArchiveRowHtml(id, embedOutcome) {
         </div>
       </div>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        ${isOpen ? `<button class="btn ghost small archive-load-estimator">Continue in Estimator</button>
+        ${isOpen ? `<button class="btn ghost small archive-load-estimator">Edit</button>
         <button class="btn ghost small archive-delete" style="color:var(--rose);">Delete</button>` : ""}
       </div>
     </div>
@@ -171,7 +171,7 @@ export function wireArchiveRows(wrap, rerender) {
           state.currentDraftId = draftId;
           window.dispatchEvent(new CustomEvent("open-draft", { detail: { id: draftId } }));
         },
-        "Yes, continue editing"
+        "Confirm"
       );
     };
   });
