@@ -451,10 +451,10 @@ function buildBarLabel(x, barW, y, h, val, fontSize, insideTextColor) {
   const fitsInside = h >= estLabelLength;
   if (fitsInside) {
     const cy = y + estLabelLength / 2 + 3; // anchored near the top of the column, text runs down into it
-    return `<text x="${cx}" y="${cy}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="${insideTextColor || "#1C1B33"}" pointer-events="none" transform="rotate(90 ${cx} ${cy})">${label}</text>`;
+    return `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${fontSize}" font-weight="700" fill="${insideTextColor || "#1C1B33"}" pointer-events="none" transform="rotate(90 ${cx} ${cy})">${label}</text>`;
   }
   const cy = y - 5;
-  return `<text x="${cx}" y="${cy}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="var(--ink)" pointer-events="none" transform="rotate(90 ${cx} ${cy})">${label}</text>`;
+  return `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="${fontSize}" font-weight="700" fill="var(--ink)" pointer-events="none" transform="rotate(90 ${cx} ${cy})">${label}</text>`;
 }
 
 function renderMultiRoleChart(wrap, months, keys, rolesToShow, padLeft, padBottom, padTop, padRight, plotW, plotH, groupW) {
