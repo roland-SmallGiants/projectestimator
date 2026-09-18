@@ -22,6 +22,7 @@ export const state = {
   expandedSummaryCategories: new Set(),
   expandedHoursComparisonTasks: new Set(),
   expandedHoursDisciplines: new Set(),
+  expandedNeverUsedDisciplines: new Set(),
   expandedArchiveCategories: new Set(),
   expandedEditHistory: new Set(),
   openArchiveDetails: new Set(),

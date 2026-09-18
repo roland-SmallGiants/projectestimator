@@ -398,20 +398,26 @@ export function renderNeverUsedSection() {
   const el = document.getElementById("neverUsedTasks");
   if (!el) return;
   const groups = computeNeverUsedByDiscipline();
-  if (!groups.length) { el.innerHTML = `<tr><td colspan="6" class="task-empty">Every task has been used in at least one quote.</td></tr>`; return; }
+  if (!groups.length) { el.innerHTML = `<tr><td class="task-empty">Every task has been used in at least one quote.</td></tr>`; return; }
 
   el.innerHTML = groups.map((g) => {
-    const headerRow = `<tr><td colspan="6" style="font-weight:700; color:var(--accent); padding-top:14px;">${esc(g.category)}${g.allUnused ? ` <span class="sub" style="color:var(--rose); font-weight:600;">\u2014 no tasks in this discipline have been quoted yet</span>` : ""}</td></tr>`;
-    const taskRows = g.tasks.map((t) => `<tr>
-      <td>${esc(t.task)}</td>
-      <td class="numc">${t.defaultHours.toLocaleString("nl-NL")}</td>
-      <td class="numc sub">\u2014</td>
-      <td class="numc sub">0</td>
-      <td class="numc sub">\u2014</td>
-      <td class="numc sub">\u2014</td>
-    </tr>`).join("");
+    const isOpen = state.expandedNeverUsedDisciplines.has(g.category);
+    const headerRow = `<tr class="never-used-discipline-header" data-category="${esc(g.category)}" style="cursor:pointer;">
+      <td style="font-weight:700; color:var(--accent); padding-top:14px;"><span style="display:inline-block; width:14px;">${isOpen ? "\u25be" : "\u25b8"}</span>${esc(g.category)}${g.allUnused ? ` <span class="sub" style="color:var(--rose); font-weight:600;">\u2014 no tasks in this discipline have been quoted yet</span>` : ""}</td>
+    </tr>`;
+    if (!isOpen) return headerRow;
+    const taskRows = g.tasks.map((t) => `<tr><td style="padding-left:26px;">${esc(t.task)}</td></tr>`).join("");
     return headerRow + taskRows;
   }).join("");
+
+  el.querySelectorAll(".never-used-discipline-header").forEach((tr) => {
+    tr.onclick = () => {
+      const category = tr.dataset.category;
+      if (state.expandedNeverUsedDisciplines.has(category)) state.expandedNeverUsedDisciplines.delete(category);
+      else state.expandedNeverUsedDisciplines.add(category);
+      renderNeverUsedSection();
+    };
+  });
 }
 
 function computeHoursPerRoleByMonth() {
