@@ -5,7 +5,7 @@ import { initWelcomeScreen, renderWelcomeUserList, renderCurrentUserIndicator } 
 import {
   subscribeDrafts, renderDraftsList, createDraft, tryLockDraft, startHeartbeat, releaseLock, subscribeDraftItems, unsubscribeDraftItems,
 } from "./drafts.js";
-import { renderEstimatorView, isReadOnly } from "./estimator.js";
+import { renderEstimatorView, isReadOnly, renderClientNameOptions } from "./estimator.js";
 import { subscribeQuotes, saveCurrentDraftAsQuote, buildArchiveRowHtml, wireArchiveRows } from "./quotes.js";
 import { renderReport, wireChartToggle } from "./report.js";
 import {
@@ -62,6 +62,7 @@ async function boot() {
   subscribeQuotes(() => {
     if (document.getElementById("quotesView").style.display !== "none") renderQuotesView();
     if (document.getElementById("reportView").style.display !== "none") renderReport();
+    renderClientNameOptions();
   });
 }
 

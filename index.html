@@ -70,7 +70,9 @@
         <h2>Client</h2>
         <div class="sub">Which client is this quote for?</div>
         <div style="margin-top:10px;">
-          <input type="text" id="clientNameInput" placeholder="Client name" style="max-width:220px;">
+          <input type="text" id="clientNameInput" placeholder="Client name" list="clientNameOptions" style="max-width:220px;">
+          <datalist id="clientNameOptions"></datalist>
+          <div class="sub" id="clientNameSuggestion" style="margin-top:6px; min-height:16px;"></div>
         </div>
         <div style="margin-top:12px;">
           <label class="sub" style="display:block; margin-bottom:4px;">Project description</label>

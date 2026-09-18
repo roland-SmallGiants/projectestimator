@@ -1,6 +1,6 @@
 import { db } from "./firebase-init.js";
 import { state, CATEGORIES, rateForRole, effectiveHours, sortedRateIds } from "./state.js";
-import { esc, money, moneyPlain, notesIcon } from "./utils.js";
+import { esc, money, moneyPlain, notesIcon, levenshtein, normalizeClientName } from "./utils.js";
 import { seedDraftItemsForDiscipline, lockOwner } from "./drafts.js";
 import { getTaskHoursForRole } from "./admin.js";
 
@@ -37,6 +37,46 @@ export function renderSaveButtonLabel() {
   btn.textContent = isEditingExisting ? "Update quote in archive" : "Save to archive";
 }
 
+function knownClientNames() {
+  const names = new Set();
+  Object.values(state.quotes || {}).forEach((q) => {
+    if (q.clientName && q.clientName !== "(no client name)") names.add(q.clientName);
+  });
+  return [...names];
+}
+
+export function renderClientNameOptions() {
+  const list = document.getElementById("clientNameOptions");
+  if (!list) return;
+  list.innerHTML = knownClientNames().sort((a, b) => a.localeCompare(b)).map((n) => `<option value="${esc(n)}"></option>`).join("");
+}
+
+function checkClientNameSuggestion() {
+  const nameInput = document.getElementById("clientNameInput");
+  const suggestionEl = document.getElementById("clientNameSuggestion");
+  if (!nameInput || !suggestionEl) return;
+  const typed = nameInput.value.trim();
+  suggestionEl.innerHTML = "";
+  if (!typed) return;
+  const known = knownClientNames();
+  if (known.includes(typed)) return; // exact match, nothing to suggest
+  let best = null, bestDist = Infinity;
+  known.forEach((n) => {
+    const dist = levenshtein(typed, n);
+    if (dist < bestDist) { bestDist = dist; best = n; }
+  });
+  // Only suggest for small, "probably a typo/casing slip" distances relative to the name's length.
+  if (best && bestDist > 0 && bestDist <= Math.max(2, Math.ceil(best.length * 0.25))) {
+    suggestionEl.innerHTML = `Did you mean <a href="#" id="clientNameSuggestionLink" style="color:var(--accent-ink); font-weight:600;">${esc(best)}</a>?`;
+    document.getElementById("clientNameSuggestionLink").onclick = (e) => {
+      e.preventDefault();
+      nameInput.value = best;
+      suggestionEl.innerHTML = "";
+      nameInput.dispatchEvent(new Event("change"));
+    };
+  }
+}
+
 export function renderClientSection() {
   const d = currentDraft();
   if (!d) return;
@@ -47,7 +87,14 @@ export function renderClientSection() {
   if (document.activeElement !== descInput) descInput.value = d.projectDescription || "";
   nameInput.disabled = ro;
   descInput.disabled = ro;
-  nameInput.onchange = () => !ro && db.collection("drafts").doc(state.currentDraftId).update({ clientName: nameInput.value }).catch(() => {});
+  nameInput.onchange = () => {
+    if (ro) return;
+    const normalized = normalizeClientName(nameInput.value);
+    nameInput.value = normalized;
+    document.getElementById("clientNameSuggestion").innerHTML = "";
+    db.collection("drafts").doc(state.currentDraftId).update({ clientName: normalized }).catch(() => {});
+  };
+  nameInput.oninput = () => !ro && checkClientNameSuggestion();
   descInput.onchange = () => !ro && db.collection("drafts").doc(state.currentDraftId).update({ projectDescription: descInput.value }).catch(() => {});
 }
 
