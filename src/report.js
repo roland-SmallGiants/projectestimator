@@ -378,7 +378,7 @@ export function computeNeverUsedByDiscipline() {
   const byCategory = {};
   unused.forEach((r) => {
     byCategory[r.category] = byCategory[r.category] || [];
-    byCategory[r.category].push(r.task);
+    byCategory[r.category].push({ task: r.task, defaultHours: r.defaultHours });
   });
   return Object.keys(byCategory)
     .sort((a, b) => {
@@ -398,11 +398,20 @@ export function renderNeverUsedSection() {
   const el = document.getElementById("neverUsedTasks");
   if (!el) return;
   const groups = computeNeverUsedByDiscipline();
-  if (!groups.length) { el.innerHTML = `<div class="task-empty">Every task has been used in at least one quote.</div>`; return; }
-  el.innerHTML = groups.map((g) => `<div style="margin-bottom:16px;">
-    <div style="font-weight:700; color:var(--accent); margin-bottom:6px;">${esc(g.category)}${g.allUnused ? ` <span class="sub" style="color:var(--rose); font-weight:600;">\u2014 no tasks in this discipline have been quoted yet</span>` : ""}</div>
-    <div class="chips small">${g.tasks.map((t) => `<span class="chip" style="cursor:default;">${esc(t)}</span>`).join("")}</div>
-  </div>`).join("");
+  if (!groups.length) { el.innerHTML = `<tr><td colspan="6" class="task-empty">Every task has been used in at least one quote.</td></tr>`; return; }
+
+  el.innerHTML = groups.map((g) => {
+    const headerRow = `<tr><td colspan="6" style="font-weight:700; color:var(--accent); padding-top:14px;">${esc(g.category)}${g.allUnused ? ` <span class="sub" style="color:var(--rose); font-weight:600;">\u2014 no tasks in this discipline have been quoted yet</span>` : ""}</td></tr>`;
+    const taskRows = g.tasks.map((t) => `<tr>
+      <td>${esc(t.task)}</td>
+      <td class="numc">${t.defaultHours.toLocaleString("nl-NL")}</td>
+      <td class="numc sub">\u2014</td>
+      <td class="numc sub">0</td>
+      <td class="numc sub">\u2014</td>
+      <td class="numc sub">\u2014</td>
+    </tr>`).join("");
+    return headerRow + taskRows;
+  }).join("");
 }
 
 function computeHoursPerRoleByMonth() {
