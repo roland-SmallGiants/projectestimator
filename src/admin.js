@@ -363,7 +363,7 @@ export function renderDisciplinesAdmin() {
         hoursByRole[input.dataset.role] = Number(input.value) || 0;
         db.collection("task_catalog").doc(input.dataset.itemId).update({ hoursByRole }).catch(() => {});
       };
-      wireNumberStepper(input);
+      wireNumberStepper(input, { fullWidth: true });
     });
     row.querySelectorAll(".disc-task-del").forEach((btn) => {
       btn.onclick = () => {
