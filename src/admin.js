@@ -285,9 +285,9 @@ export function renderDisciplinesAdmin() {
         <span class="disc-collapse-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
           <span style="display:inline-block; width:14px; color:var(--ink-soft);">${isOpen ? "\u25be" : "\u25b8"}</span>
           <span class="disc-name-display" style="font-weight:700;">${esc(d.name)}</span>
+          <input type="text" class="disc-name-input" value="${esc(d.name)}" style="display:none; font-weight:700; max-width:260px;">
         </span>
         <span style="display:flex; align-items:center; gap:8px;">
-          <input type="text" class="disc-name-input" value="${esc(d.name)}" style="display:none; font-weight:700; max-width:260px;">
           <button type="button" class="disc-name-edit-btn" title="Rename discipline" style="all:unset; cursor:pointer; color:var(--ink-soft); font-size:13px;">\u270f\ufe0f</button>
           <button class="btn small danger disc-del">\u2715</button>
         </span>
@@ -329,7 +329,8 @@ export function renderDisciplinesAdmin() {
   list.querySelectorAll(".discipline-row").forEach((row) => {
     const id = row.dataset.id;
 
-    row.querySelector(".disc-collapse-toggle").onclick = () => {
+    row.querySelector(".disc-collapse-toggle").onclick = (e) => {
+      if (e.target.classList.contains("disc-name-input")) return; // don't collapse while editing the name
       if (state.expandedAdminDisciplines.has(id)) state.expandedAdminDisciplines.delete(id);
       else state.expandedAdminDisciplines.add(id);
       renderDisciplinesAdmin();
