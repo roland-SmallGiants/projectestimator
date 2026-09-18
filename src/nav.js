@@ -5,6 +5,29 @@ const VIEWS = ["drafts", "estimator", "quotes", "report", "admin"];
 // highlighting "New Quote" as the closest related destination.
 const NAV_FOR_VIEW = { drafts: "newQuoteNavBtn", estimator: "newQuoteNavBtn", quotes: "quotesNavBtn", report: "reportNavBtn", admin: "adminNavBtn" };
 
+const PAGE_COPY = {
+  drafts: {
+    title: "Client Work Estimator",
+    subtitle: "Shared with your team. Multiple quotes can be in progress at once \u2014 everyone sees the same drafts list.",
+  },
+  estimator: {
+    title: "Client Work Estimator",
+    subtitle: "Shared with your team. Multiple quotes can be in progress at once \u2014 everyone sees the same drafts list.",
+  },
+  quotes: {
+    title: "Quotes",
+    subtitle: "Every quote your team has put together, all in one place. Search by client, revisit the full breakdown, and track whether each one was won or lost.",
+  },
+  report: {
+    title: "Client Work Estimator",
+    subtitle: "Shared with your team. Multiple quotes can be in progress at once \u2014 everyone sees the same drafts list.",
+  },
+  admin: {
+    title: "Client Work Estimator",
+    subtitle: "Shared with your team. Multiple quotes can be in progress at once \u2014 everyone sees the same drafts list.",
+  },
+};
+
 export function setStatus(text, isErr) {
   const el = document.getElementById("status");
   if (!el) return;
@@ -16,6 +39,11 @@ export function showView(name) {
   VIEWS.forEach((v) => {
     document.getElementById(v + "View").style.display = v === name ? "" : "none";
   });
+  const copy = PAGE_COPY[name];
+  if (copy) {
+    document.getElementById("pageTitle").textContent = copy.title;
+    document.getElementById("pageSubtitle").textContent = copy.subtitle;
+  }
   document.querySelectorAll(".nav-menu-item").forEach((el) => el.classList.remove("active"));
   const activeId = NAV_FOR_VIEW[name];
   if (activeId) {

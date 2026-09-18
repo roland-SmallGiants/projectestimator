@@ -94,9 +94,12 @@ export function buildArchiveRowHtml(id) {
           <span class="archive-meta-value archive-meta-value-wrap">${esc(q.projectDescription || "") || "\u2014"}</span>
         </div>
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        ${isOpen ? `<button class="btn ghost small archive-load-estimator">Edit</button>
-        <button class="btn ghost small archive-delete" style="color:var(--rose);">Delete</button>` : ""}
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        ${outcomeChips}
+        ${isOpen ? `<div style="display:flex; gap:10px;">
+          <button class="btn ghost small archive-load-estimator">Edit</button>
+          <button class="btn ghost small archive-delete" style="color:var(--rose);">Delete</button>
+        </div>` : ""}
       </div>
     </div>
     <div class="archive-detail ${isOpen ? "open" : ""}">
@@ -105,7 +108,6 @@ export function buildArchiveRowHtml(id) {
         <thead><tr><th>Category</th><th style="width:140px">Role</th><th class="numc" style="width:110px">Est. Hours</th><th class="num" style="width:120px">Est. Cost (\u20ac)</th></tr></thead>
         <tbody>${catRows}<tr class="summary-row final"><td>Final quoted price</td><td></td><td class="numc">${q.grandHours.toLocaleString("nl-NL")}</td><td class="num">${moneyPlain(q.finalPrice)}</td></tr></tbody>
       </table>
-      <div class="row-actions" style="justify-content:flex-end; margin-top:14px;">${outcomeChips}</div>
     </div>
   </div>`;
 }
