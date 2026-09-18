@@ -292,8 +292,20 @@ export function renderHoursComparison() {
       const { avgActual, variance } = r;
       const variancePct = r.defaultHours > 0 ? (variance / r.defaultHours) * 100 : null;
       const varianceStr = (variance > 0 ? "+" : "") + variance.toLocaleString("nl-NL", { maximumFractionDigits: 1 });
-      const variancePctStr = variancePct === null ? "\u2014" : (variancePct > 0 ? "+" : "") + variancePct.toLocaleString("nl-NL", { maximumFractionDigits: 0 }) + "%";
       const varianceColor = variance > 0 ? "var(--rose)" : variance < 0 ? "var(--accent)" : "var(--ink-soft)";
+      const barHtml = (() => {
+        if (variancePct === null) return "\u2014";
+        const capped = Math.max(-100, Math.min(100, variancePct));
+        const fillWidth = Math.abs(capped) / 2; // bar extends from the center, so max half-width
+        const side = capped >= 0 ? `left:50%;` : `right:50%;`;
+        const pctStr = (variancePct > 0 ? "+" : "") + variancePct.toLocaleString("nl-NL", { maximumFractionDigits: 0 }) + "%";
+        return `<div style="display:flex; align-items:center; gap:8px; justify-content:center;">
+          <div style="position:relative; width:56px; height:6px; background:var(--line); border-radius:3px; flex-shrink:0;">
+            <div style="position:absolute; top:0; height:6px; border-radius:3px; ${side} width:${fillWidth}%; background:${varianceColor};"></div>
+          </div>
+          <span style="font-size:11px; color:${varianceColor}; width:36px; text-align:left;">${pctStr}</span>
+        </div>`;
+      })();
 
       const mainRow = `<tr class="summary-cat-row hours-comparison-row" data-key="${esc(key)}" style="cursor:pointer;">
         <td><span style="display:inline-block; width:14px;">${isOpen ? "\u25be" : "\u25b8"}</span>${esc(r.task)}</td>
@@ -301,7 +313,7 @@ export function renderHoursComparison() {
         <td class="numc">${avgActual.toLocaleString("nl-NL", { maximumFractionDigits: 1 })}</td>
         <td class="numc">${r.entries.length}</td>
         <td class="numc" style="color:${varianceColor};">${varianceStr}</td>
-        <td class="numc" style="color:${varianceColor};">${variancePctStr}</td>
+        <td class="numc">${barHtml}</td>
       </tr>`;
       if (!isOpen) return mainRow;
       const detailRows = r.entries.map((e) => `<tr class="summary-task-row">
@@ -326,9 +338,43 @@ export function renderHoursComparison() {
   });
 }
 
+export function computeNeverUsedByDiscipline() {
+  const unused = computeTaskHoursComparison().filter((r) => r.entries.length === 0);
+  const canonicalOrder = CATEGORIES();
+  const byCategory = {};
+  unused.forEach((r) => {
+    byCategory[r.category] = byCategory[r.category] || [];
+    byCategory[r.category].push(r.task);
+  });
+  return Object.keys(byCategory)
+    .sort((a, b) => {
+      const ai = canonicalOrder.indexOf(a), bi = canonicalOrder.indexOf(b);
+      if (ai === -1 && bi === -1) return a.localeCompare(b);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    })
+    .map((category) => {
+      const totalInCategory = Object.values(state.taskCatalog || {}).filter((t) => t.category === category).length;
+      return { category, tasks: byCategory[category], allUnused: byCategory[category].length === totalInCategory && totalInCategory > 0 };
+    });
+}
+
+export function renderNeverUsedSection() {
+  const el = document.getElementById("neverUsedTasks");
+  if (!el) return;
+  const groups = computeNeverUsedByDiscipline();
+  if (!groups.length) { el.innerHTML = `<div class="task-empty">Every task has been used in at least one quote.</div>`; return; }
+  el.innerHTML = groups.map((g) => `<div style="margin-bottom:12px;">
+    <div style="font-weight:700; color:var(--accent); margin-bottom:4px;">${esc(g.category)}${g.allUnused ? ` <span class="sub" style="color:var(--rose); font-weight:600;">\u2014 no tasks in this discipline have been quoted yet</span>` : ""}</div>
+    <div class="sub">${g.tasks.map((t) => esc(t)).join(", ")}</div>
+  </div>`).join("");
+}
+
 export function renderReport() {
   renderReportInsights();
   renderReportChart();
   renderReportColumns();
   renderHoursComparison();
+  renderNeverUsedSection();
 }
