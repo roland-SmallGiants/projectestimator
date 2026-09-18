@@ -256,6 +256,20 @@ export function computeTaskHoursComparison() {
   return Object.values(rows).sort((a, b) => a.category.localeCompare(b.category) || a.task.localeCompare(b.task));
 }
 
+function buildDeviationBar(variancePct, varianceColor) {
+  if (variancePct === null) return "\u2014";
+  const capped = Math.max(-100, Math.min(100, variancePct));
+  const fillWidth = Math.abs(capped) / 2; // bar extends from the center, so max half-width
+  const side = capped >= 0 ? `left:50%;` : `right:50%;`;
+  const pctStr = (variancePct > 0 ? "+" : "") + variancePct.toLocaleString("nl-NL", { maximumFractionDigits: 0 }) + "%";
+  return `<div style="display:flex; align-items:center; gap:8px; justify-content:center;">
+    <div style="position:relative; width:56px; height:6px; background:var(--line); border-radius:3px; flex-shrink:0;">
+      <div style="position:absolute; top:0; height:6px; border-radius:3px; ${side} width:${fillWidth}%; background:${varianceColor};"></div>
+    </div>
+    <span style="font-size:11px; color:${varianceColor}; width:36px; text-align:left;">${pctStr}</span>
+  </div>`;
+}
+
 export function renderHoursComparison() {
   const body = document.getElementById("hoursComparisonBody");
   if (!body) return;
@@ -284,7 +298,24 @@ export function renderHoursComparison() {
       .filter((r) => r.category === category)
       .sort((a, b) => Math.abs(a.variance) - Math.abs(b.variance)); // smallest deviation first
 
-    const headerRow = `<tr><td colspan="6" style="font-weight:700; color:var(--accent); padding-top:14px;">${esc(category)}</td></tr>`;
+    const isCatOpen = state.expandedHoursDisciplines.has(category);
+    const totalDefault = rowsInCat.reduce((s, r) => s + r.defaultHours, 0);
+    const totalActual = rowsInCat.reduce((s, r) => s + r.avgActual, 0);
+    const totalVariance = totalActual - totalDefault;
+    const totalVariancePct = totalDefault > 0 ? (totalVariance / totalDefault) * 100 : null;
+    const totalVarianceColor = totalVariance > 0 ? "var(--rose)" : totalVariance < 0 ? "var(--accent)" : "var(--ink-soft)";
+    const totalVarianceStr = (totalVariance > 0 ? "+" : "") + totalVariance.toLocaleString("nl-NL", { maximumFractionDigits: 1 });
+
+    const headerRow = `<tr class="hours-discipline-header" data-category="${esc(category)}" style="cursor:pointer;">
+      <td style="font-weight:700; color:var(--accent); padding-top:14px;"><span style="display:inline-block; width:14px;">${isCatOpen ? "\u25be" : "\u25b8"}</span>${esc(category)}</td>
+      <td class="numc" style="padding-top:14px; font-weight:700; color:var(--accent);">${totalDefault.toLocaleString("nl-NL", { maximumFractionDigits: 1 })}</td>
+      <td class="numc" style="padding-top:14px; font-weight:700; color:var(--accent);">${totalActual.toLocaleString("nl-NL", { maximumFractionDigits: 1 })}</td>
+      <td class="numc" style="padding-top:14px;"></td>
+      <td class="numc" style="padding-top:14px; font-weight:700; color:${totalVarianceColor};">${totalVarianceStr}</td>
+      <td class="numc" style="padding-top:14px;">${buildDeviationBar(totalVariancePct, totalVarianceColor)}</td>
+    </tr>`;
+
+    if (!isCatOpen) return headerRow;
 
     const taskRows = rowsInCat.map((r) => {
       const key = `${r.category}::${r.task}`;
@@ -293,31 +324,18 @@ export function renderHoursComparison() {
       const variancePct = r.defaultHours > 0 ? (variance / r.defaultHours) * 100 : null;
       const varianceStr = (variance > 0 ? "+" : "") + variance.toLocaleString("nl-NL", { maximumFractionDigits: 1 });
       const varianceColor = variance > 0 ? "var(--rose)" : variance < 0 ? "var(--accent)" : "var(--ink-soft)";
-      const barHtml = (() => {
-        if (variancePct === null) return "\u2014";
-        const capped = Math.max(-100, Math.min(100, variancePct));
-        const fillWidth = Math.abs(capped) / 2; // bar extends from the center, so max half-width
-        const side = capped >= 0 ? `left:50%;` : `right:50%;`;
-        const pctStr = (variancePct > 0 ? "+" : "") + variancePct.toLocaleString("nl-NL", { maximumFractionDigits: 0 }) + "%";
-        return `<div style="display:flex; align-items:center; gap:8px; justify-content:center;">
-          <div style="position:relative; width:56px; height:6px; background:var(--line); border-radius:3px; flex-shrink:0;">
-            <div style="position:absolute; top:0; height:6px; border-radius:3px; ${side} width:${fillWidth}%; background:${varianceColor};"></div>
-          </div>
-          <span style="font-size:11px; color:${varianceColor}; width:36px; text-align:left;">${pctStr}</span>
-        </div>`;
-      })();
 
       const mainRow = `<tr class="summary-cat-row hours-comparison-row" data-key="${esc(key)}" style="cursor:pointer;">
-        <td><span style="display:inline-block; width:14px;">${isOpen ? "\u25be" : "\u25b8"}</span>${esc(r.task)}</td>
+        <td style="padding-left:26px;"><span style="display:inline-block; width:14px;">${isOpen ? "\u25be" : "\u25b8"}</span>${esc(r.task)}</td>
         <td class="numc">${r.defaultHours.toLocaleString("nl-NL")}</td>
         <td class="numc">${avgActual.toLocaleString("nl-NL", { maximumFractionDigits: 1 })}</td>
         <td class="numc">${r.entries.length}</td>
         <td class="numc" style="color:${varianceColor};">${varianceStr}</td>
-        <td class="numc">${barHtml}</td>
+        <td class="numc">${buildDeviationBar(variancePct, varianceColor)}</td>
       </tr>`;
       if (!isOpen) return mainRow;
       const detailRows = r.entries.map((e) => `<tr class="summary-task-row">
-          <td style="padding-left:26px; font-size:12.5px; color:var(--ink-soft);">${esc(e.clientName || "(no client name)")} \u00b7 ${formatDate(e.savedAt)}</td>
+          <td style="padding-left:40px; font-size:12.5px; color:var(--ink-soft);">${esc(e.clientName || "(no client name)")} \u00b7 ${formatDate(e.savedAt)}</td>
           <td class="numc" style="font-size:12.5px; color:var(--ink-soft);">${r.defaultHours.toLocaleString("nl-NL")}</td>
           <td class="numc" style="font-size:12.5px; color:var(--ink-soft);">${e.hours.toLocaleString("nl-NL")}</td>
           <td></td><td></td><td></td>
@@ -327,6 +345,15 @@ export function renderHoursComparison() {
 
     return headerRow + taskRows;
   }).join("");
+
+  body.querySelectorAll(".hours-discipline-header").forEach((tr) => {
+    tr.onclick = () => {
+      const category = tr.dataset.category;
+      if (state.expandedHoursDisciplines.has(category)) state.expandedHoursDisciplines.delete(category);
+      else state.expandedHoursDisciplines.add(category);
+      renderHoursComparison();
+    };
+  });
 
   body.querySelectorAll(".hours-comparison-row").forEach((tr) => {
     tr.onclick = () => {
