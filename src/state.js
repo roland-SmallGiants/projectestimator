@@ -26,6 +26,7 @@ export const state = {
   expandedEditHistory: new Set(),
   openArchiveDetails: new Set(),
   reportChartType: "grouped",
+  hoursPerRoleMetric: "hours",
   reportMonthOverrides: {},
 
   lockHeartbeatTimer: null,

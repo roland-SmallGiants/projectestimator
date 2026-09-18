@@ -1,4 +1,4 @@
-import { state, CATEGORIES } from "./state.js";
+import { state, CATEGORIES, rateForRole } from "./state.js";
 import { esc, money, computeNiceAxis, formatAxisValue, formatDate, avatarColorFor } from "./utils.js";
 
 export function computeMonthlyRevenueData() {
@@ -391,47 +391,61 @@ export function renderNeverUsedSection() {
 }
 
 function computeHoursPerRoleByMonth() {
-  const months = {}; // key -> { label, byRole: {roleName: hours} }
+  const months = {}; // key -> { label, byRoleHours: {role: hours}, byRoleRevenue: {role: euros} }
   Object.values(state.quotes || {}).forEach((q) => {
     const d = q.savedAt ? new Date(q.savedAt) : null;
     if (!d || isNaN(d)) return;
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    if (!months[key]) months[key] = { label: d.toLocaleDateString(undefined, { year: "numeric", month: "short" }), byRole: {} };
+    if (!months[key]) months[key] = { label: d.toLocaleDateString(undefined, { year: "numeric", month: "short" }), byRoleHours: {}, byRoleRevenue: {} };
     (q.items || []).forEach((it) => {
       if (!it.role || !(Number(it.hours) > 0)) return;
-      months[key].byRole[it.role] = (months[key].byRole[it.role] || 0) + Number(it.hours);
+      const hrs = Number(it.hours);
+      months[key].byRoleHours[it.role] = (months[key].byRoleHours[it.role] || 0) + hrs;
+      months[key].byRoleRevenue[it.role] = (months[key].byRoleRevenue[it.role] || 0) + hrs * rateForRole(it.role);
     });
   });
   const keys = Object.keys(months).sort().slice(-12);
 
   const totalsByRole = {};
   keys.forEach((k) => {
-    Object.entries(months[k].byRole).forEach(([role, hrs]) => { totalsByRole[role] = (totalsByRole[role] || 0) + hrs; });
+    Object.entries(months[k].byRoleHours).forEach(([role, hrs]) => { totalsByRole[role] = (totalsByRole[role] || 0) + hrs; });
   });
   const roles = Object.keys(totalsByRole).sort((a, b) => totalsByRole[b] - totalsByRole[a]);
 
   return { months, keys, roles };
 }
 
+function metricValue(monthEntry, role) {
+  const bucket = state.hoursPerRoleMetric === "revenue" ? monthEntry.byRoleRevenue : monthEntry.byRoleHours;
+  return bucket[role] || 0;
+}
+function metricLabel(val) {
+  return state.hoursPerRoleMetric === "revenue" ? money(val) : val.toLocaleString("nl-NL") + "h";
+}
+function metricAxisLabel(val) {
+  return state.hoursPerRoleMetric === "revenue" ? formatAxisValue(val) : val.toLocaleString("nl-NL") + "h";
+}
+
 function renderMultiRoleChart(wrap, months, keys, rolesToShow, padLeft, padBottom, padTop, padRight, plotW, plotH, groupW) {
-  const rawMax = Math.max(1, ...keys.flatMap((k) => rolesToShow.map((r) => months[k].byRole[r] || 0)));
+  const rawMax = Math.max(1, ...keys.flatMap((k) => rolesToShow.map((r) => metricValue(months[k], r))));
   const { niceMax, step } = computeNiceAxis(rawMax, 5);
   const barW = Math.min(rolesToShow.length <= 2 ? 40 : 16, (groupW - 6) / Math.max(1, rolesToShow.length)), gap = rolesToShow.length <= 2 ? 6 : 3;
   const gridLines = [0, 1, 2, 3, 4].map((i) => {
     const val = step * i, f = niceMax > 0 ? val / niceMax : 0, y = padTop + plotH * (1 - f);
-    return `<line x1="${padLeft}" y1="${y}" x2="${900 - padRight}" y2="${y}" stroke="var(--line)"/><text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--ink-soft)">${val.toLocaleString("nl-NL")}h</text>`;
+    return `<line x1="${padLeft}" y1="${y}" x2="${900 - padRight}" y2="${y}" stroke="var(--line)"/><text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--ink-soft)">${metricAxisLabel(val)}</text>`;
   }).join("");
   const clusterW = rolesToShow.length * barW + (rolesToShow.length - 1) * gap;
   const bars = keys.map((k, i) => {
     const m = months[k];
     const groupX = padLeft + i * groupW + (groupW - clusterW) / 2;
     const parts = rolesToShow.map((role, j) => {
-      const val = m.byRole[role] || 0;
+      const val = metricValue(m, role);
       if (val <= 0) return "";
       const color = avatarColorFor(role);
       const h = (val / niceMax) * plotH, x = groupX + j * (barW + gap), y = padTop + plotH - h;
-      const rect = `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${esc(role)}: ${val.toLocaleString("nl-NL")}h"></rect>`;
-      const label = rolesToShow.length <= 2 ? `<text x="${x + barW / 2}" y="${y - 6}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)" pointer-events="none">${val.toLocaleString("nl-NL")}h</text>` : "";
+      const rect = `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${esc(role)}: ${metricLabel(val)}"></rect>`;
+      const fontSize = rolesToShow.length <= 2 ? 10 : 8;
+      const label = val > 0 ? `<text x="${x + barW / 2}" y="${y - 5}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="var(--ink)" pointer-events="none">${metricLabel(val)}</text>` : "";
       return rect + label;
     }).join("");
     return `${parts}<text x="${padLeft + i * groupW + groupW / 2}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
@@ -486,18 +500,18 @@ export function renderHoursPerRoleChart() {
 
   if (selectedRole) {
     const color = avatarColorFor(selectedRole);
-    const rawMax = Math.max(1, ...keys.map((k) => months[k].byRole[selectedRole] || 0));
+    const rawMax = Math.max(1, ...keys.map((k) => metricValue(months[k], selectedRole)));
     const { niceMax, step } = computeNiceAxis(rawMax, 5);
     const barW = Math.min(48, groupW * 0.5);
     const gridLines = [0, 1, 2, 3, 4].map((i) => {
       const val = step * i, f = niceMax > 0 ? val / niceMax : 0, y = padTop + plotH * (1 - f);
-      return `<line x1="${padLeft}" y1="${y}" x2="${900 - padRight}" y2="${y}" stroke="var(--line)"/><text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--ink-soft)">${val.toLocaleString("nl-NL")}h</text>`;
+      return `<line x1="${padLeft}" y1="${y}" x2="${900 - padRight}" y2="${y}" stroke="var(--line)"/><text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--ink-soft)">${metricAxisLabel(val)}</text>`;
     }).join("");
     const bars = keys.map((k, i) => {
-      const m = months[k], val = m.byRole[selectedRole] || 0, x = padLeft + i * groupW + (groupW - barW) / 2;
+      const m = months[k], val = metricValue(m, selectedRole), x = padLeft + i * groupW + (groupW - barW) / 2;
       const h = (val / niceMax) * plotH, y = padTop + plotH - h;
-      const rect = val > 0 ? `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${esc(selectedRole)}: ${val.toLocaleString("nl-NL")}h"></rect>` : "";
-      const label = val > 0 ? `<text x="${x + barW / 2}" y="${y - 6}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)" pointer-events="none">${val.toLocaleString("nl-NL")}h</text>` : "";
+      const rect = val > 0 ? `<rect class="report-chart-bar" x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}" rx="2" data-tooltip="${esc(m.label)} \u00b7 ${esc(selectedRole)}: ${metricLabel(val)}"></rect>` : "";
+      const label = val > 0 ? `<text x="${x + barW / 2}" y="${y - 6}" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)" pointer-events="none">${metricLabel(val)}</text>` : "";
       return `${rect}${label}<text x="${padLeft + i * groupW + groupW / 2}" y="${260 - padBottom + 16}" text-anchor="middle" font-size="10.5" fill="var(--ink-soft)">${esc(m.label)}</text>`;
     }).join("");
     wrap.innerHTML = `<div style="position:relative;"><svg viewBox="0 0 900 260" style="width:100%; height:auto; display:block;">${gridLines}${bars}</svg><div class="chart-tooltip" style="display:none; position:absolute; pointer-events:none; background:var(--ink); color:var(--bg-raised); font-size:12px; padding:6px 10px; border-radius:6px; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,0.2); z-index:10;"></div></div>`;
@@ -511,6 +525,7 @@ export function renderHoursPerRoleChart() {
 export function wireHoursPerRoleSelect() {
   const select = document.getElementById("hoursPerRoleSelect");
   const compareSelect = document.getElementById("hoursPerRoleCompareSelect");
+  const metricToggle = document.getElementById("hoursPerRoleMetricToggle");
   if (select) {
     select.addEventListener("change", () => {
       populateHoursPerRoleSelect(); // refresh compare options + visibility for the new primary role
@@ -518,6 +533,15 @@ export function wireHoursPerRoleSelect() {
     });
   }
   if (compareSelect) compareSelect.addEventListener("change", renderHoursPerRoleChart);
+  if (metricToggle) {
+    metricToggle.querySelectorAll(".chip").forEach((btn) => {
+      btn.onclick = () => {
+        state.hoursPerRoleMetric = btn.dataset.metric;
+        metricToggle.querySelectorAll(".chip").forEach((b) => b.classList.toggle("on", b === btn));
+        renderHoursPerRoleChart();
+      };
+    });
+  }
 }
 
 export function renderReport() {
