@@ -5,10 +5,10 @@
 // access control is handled by firestore.rules, not by hiding this object.
 
 export const firebaseConfig = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME.firebaseapp.com",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME.appspot.com",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME",
+  apiKey: "AIzaSyA5622l54dA633Eb5GOqaqOmNaiRfoYpsI",
+  authDomain: "projectestimator-2e426.firebaseapp.com",
+  projectId: "projectestimator-2e426",
+  storageBucket: "projectestimator-2e426.firebasestorage.app",
+  messagingSenderId: "592537865396",
+  appId: "1:592537865396:web:dca9ecb74350fcee9adbe1",
 };
