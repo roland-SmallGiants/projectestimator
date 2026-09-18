@@ -284,7 +284,7 @@ export function renderDisciplinesAdmin() {
           </tr>
           <tr>
             <th>Default tasks</th>
-            ${applicableRoles.map((r) => `<th class="numc" style="width:90px;">${esc(r.role)}</th>`).join("")}
+            ${applicableRoles.map((r) => `<th class="numc" style="width:45px;">${esc(r.role)}</th>`).join("")}
             <th style="width:30px;"></th>
           </tr>
         </thead>
