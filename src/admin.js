@@ -111,9 +111,9 @@ export async function bootstrapDefaultsIfEmpty() {
 
 let draggedRoleId = null;
 
-function wireRoleDragAndDrop(listEl) {
-  if (!listEl) return;
-  listEl.querySelectorAll(".role-drag-item").forEach((row) => {
+function wireRoleDragAndDrop(body) {
+  if (!body) return;
+  body.querySelectorAll(".role-drag-item").forEach((row) => {
     row.addEventListener("dragstart", () => {
       draggedRoleId = row.dataset.id;
       row.style.opacity = "0.4";
@@ -125,7 +125,7 @@ function wireRoleDragAndDrop(listEl) {
     row.addEventListener("dragover", (e) => {
       e.preventDefault();
       if (!draggedRoleId || row.dataset.id === draggedRoleId) return;
-      const draggedEl = listEl.querySelector(`[data-id="${draggedRoleId}"]`);
+      const draggedEl = body.querySelector(`[data-id="${draggedRoleId}"]`);
       if (!draggedEl) return;
       const rect = row.getBoundingClientRect();
       const before = (e.clientY - rect.top) < rect.height / 2;
@@ -133,7 +133,7 @@ function wireRoleDragAndDrop(listEl) {
     });
     row.addEventListener("drop", async (e) => {
       e.preventDefault();
-      const ids = [...listEl.querySelectorAll(".role-drag-item")].map((r) => r.dataset.id);
+      const ids = [...body.querySelectorAll(".role-drag-item")].map((r) => r.dataset.id);
       for (let i = 0; i < ids.length; i++) {
         if ((state.rateCard[ids[i]] || {}).order === i) continue;
         await db.collection("rate_card").doc(ids[i]).update({ order: i }).catch(() => {});
@@ -142,46 +142,46 @@ function wireRoleDragAndDrop(listEl) {
   });
 }
 
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
 export function renderRateCard() {
-  const list = document.getElementById("rateCardList");
-  if (!list) return;
+  const body = document.getElementById("rateCardBody");
+  if (!body) return;
   const ids = Object.keys(state.rateCard).sort((a, b) => (state.rateCard[a].order ?? 0) - (state.rateCard[b].order ?? 0));
   const allCategories = CATEGORIES();
 
-  list.innerHTML = ids.map((id) => {
+  body.innerHTML = ids.map((id) => {
     const r = state.rateCard[id];
     const cats = Array.isArray(r.categories) ? r.categories : [];
-    return `<div class="role-drag-item" draggable="true" data-id="${id}" style="border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:12px; cursor:grab;">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span class="sub" style="cursor:grab; user-select:none;">\u283f</span>
-        <input type="text" class="role-name" value="${esc(r.role)}" style="font-weight:700; max-width:220px;">
-        <div style="display:flex; align-items:center; gap:6px;">
-          <input type="number" class="role-rate numc" value="${r.rate}" min="0" step="1" style="width:80px;">
-          <span class="sub">\u20ac / hr</span>
-        </div>
-        <button class="btn small danger role-del" style="margin-left:auto;">\u2715</button>
-      </div>
-      <div class="sub" style="margin-top:10px; margin-bottom:6px;">Applies to</div>
-      <div class="chips small role-cat-chips" data-id="${id}">
-        ${allCategories.map((c) => `<button type="button" class="chip ${cats.includes(c) ? "on" : ""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}
-      </div>
-    </div>`;
-  }).join("") || `<div class="task-empty">No roles yet.</div>`;
+    const rows = chunk(allCategories, 3).map((group) => `<div class="chips small role-cat-chips" data-id="${id}" style="margin-bottom:4px;">
+        ${group.map((c) => `<button type="button" class="chip ${cats.includes(c) ? "on" : ""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}
+      </div>`).join("");
+    return `<tr class="role-drag-item" draggable="true" data-id="${id}">
+      <td><span style="display:flex; align-items:center; gap:8px;"><span class="sub" style="cursor:grab; user-select:none;">\u283f</span><input type="text" class="role-name" value="${esc(r.role)}"></span></td>
+      <td class="numc"><input type="number" class="role-rate" value="${r.rate}" min="0" step="1"></td>
+      <td>${rows}</td>
+      <td><button class="btn small danger role-del">\u2715</button></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="4" style="color:var(--ink-soft); text-align:center; padding:16px;">No roles yet.</td></tr>`;
 
-  list.querySelectorAll(".role-drag-item").forEach((row) => {
-    const id = row.dataset.id;
-    const nameInput = row.querySelector(".role-name");
-    const rateInput = row.querySelector(".role-rate");
+  body.querySelectorAll("tr[data-id]").forEach((tr) => {
+    const id = tr.dataset.id;
+    const nameInput = tr.querySelector(".role-name");
+    const rateInput = tr.querySelector(".role-rate");
     nameInput.onchange = () => db.collection("rate_card").doc(id).update({ role: nameInput.value }).catch(() => {});
     rateInput.onchange = () => db.collection("rate_card").doc(id).update({ rate: Number(rateInput.value) || 0 }).catch(() => {});
-    row.querySelector(".role-del").onclick = () => {
+    tr.querySelector(".role-del").onclick = () => {
       openConfirm(
         "Delete this role?",
         `This permanently deletes "${nameInput.value || "(unnamed role)"}" from the Rate Card. Any task currently assigned to this role will show as unassigned instead.`,
         async () => { await db.collection("rate_card").doc(id).delete().catch(() => {}); }
       );
     };
-    row.querySelectorAll(".role-cat-chips .chip").forEach((chip) => {
+    tr.querySelectorAll(".role-cat-chips .chip").forEach((chip) => {
       chip.onclick = async () => {
         const r = state.rateCard[id];
         const current = Array.isArray(r.categories) ? r.categories : [];
@@ -192,7 +192,7 @@ export function renderRateCard() {
     });
   });
 
-  wireRoleDragAndDrop(list);
+  wireRoleDragAndDrop(body);
 }
 
 export function wireAddRole() {
