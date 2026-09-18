@@ -163,11 +163,11 @@
     <section class="card">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
         <div><h2 style="font-size:15px;">Revenue by month</h2><div class="sub" id="reportChartSub"></div></div>
-        <div class="chips small" id="reportChartTypeToggle">
-          <button type="button" class="chip on" data-type="grouped">Grouped</button>
-          <button type="button" class="chip" data-type="stacked">Stacked</button>
-          <button type="button" class="chip" data-type="percent">100%</button>
-        </div>
+        <table class="cell-toggle" id="reportChartTypeToggle"><tr>
+          <td class="active" data-type="grouped">Grouped</td>
+          <td data-type="stacked">Stacked</td>
+          <td data-type="percent">100%</td>
+        </tr></table>
       </div>
       <div id="reportChartContainer" style="margin-top:14px;"></div>
     </section>
@@ -199,10 +199,10 @@
         <select id="hoursPerRoleCompareSelect" style="max-width:200px; display:none; flex-shrink:0;">
           <option value="">Compare to\u2026</option>
         </select>
-        <div class="chips small" id="hoursPerRoleMetricToggle" style="flex-wrap:nowrap; flex-shrink:0;">
-          <button type="button" class="chip on" data-metric="hours">Hours</button>
-          <button type="button" class="chip" data-metric="revenue">Revenue</button>
-        </div>
+        <table class="cell-toggle" id="hoursPerRoleMetricToggle"><tr>
+          <td class="active" data-metric="hours">Hours</td>
+          <td data-metric="revenue">Revenue</td>
+        </tr></table>
       </div>
       <div id="hoursPerRoleChart" style="margin-top:14px;"></div>
     </section>

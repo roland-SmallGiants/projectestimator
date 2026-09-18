@@ -217,10 +217,10 @@ export function renderReportChart() {
 }
 
 export function wireChartToggle() {
-  document.querySelectorAll("#reportChartTypeToggle .chip").forEach((chip) => {
-    chip.onclick = () => {
-      state.reportChartType = chip.dataset.type;
-      document.querySelectorAll("#reportChartTypeToggle .chip").forEach((c) => c.classList.toggle("on", c === chip));
+  document.querySelectorAll("#reportChartTypeToggle td").forEach((cell) => {
+    cell.onclick = () => {
+      state.reportChartType = cell.dataset.type;
+      document.querySelectorAll("#reportChartTypeToggle td").forEach((c) => c.classList.toggle("active", c === cell));
       renderReportChart();
     };
   });
@@ -565,10 +565,10 @@ export function wireHoursPerRoleSelect() {
   }
   if (compareSelect) compareSelect.addEventListener("change", renderHoursPerRoleChart);
   if (metricToggle) {
-    metricToggle.querySelectorAll(".chip").forEach((btn) => {
-      btn.onclick = () => {
-        state.hoursPerRoleMetric = btn.dataset.metric;
-        metricToggle.querySelectorAll(".chip").forEach((b) => b.classList.toggle("on", b === btn));
+    metricToggle.querySelectorAll("td").forEach((cell) => {
+      cell.onclick = () => {
+        state.hoursPerRoleMetric = cell.dataset.metric;
+        metricToggle.querySelectorAll("td").forEach((c) => c.classList.toggle("active", c === cell));
         renderHoursPerRoleChart();
       };
     });

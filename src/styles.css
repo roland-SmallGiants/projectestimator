@@ -35,6 +35,10 @@ input:disabled, select:disabled, textarea:disabled { opacity:0.6; }
 
 .chips { display:flex; gap:8px; flex-wrap:wrap; }
 .chip { all:unset; padding:7px 13px; border-radius:999px; border:1px solid var(--line); font-size:12.5px; font-weight:600; cursor:pointer; background:var(--bg-raised); color:var(--ink); }
+.cell-toggle { border-collapse:collapse; }
+.cell-toggle td { padding:5px 12px; font-size:12px; font-weight:600; color:var(--ink-soft); border-bottom:2px solid var(--line); cursor:pointer; text-align:center; }
+.cell-toggle td:hover { color:var(--ink); }
+.cell-toggle td.active { color:var(--ink); border-bottom-color:var(--accent); }
 .role-cat-chips .chip { padding:5px 10px; font-size:10px; }
 .chip.on { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
 .chip.status-lost.on { background:var(--rose); border-color:var(--rose); color:#fff; }
