@@ -2,6 +2,7 @@ import { db } from "./firebase-init.js";
 import { state, CATEGORIES, rateForRole, effectiveHours, sortedRateIds } from "./state.js";
 import { esc, money, moneyPlain, notesIcon } from "./utils.js";
 import { seedDraftItemsForDiscipline, lockOwner } from "./drafts.js";
+import { getTaskHoursForRole } from "./admin.js";
 
 function currentDraft() {
   return state.currentDraftId ? state.drafts[state.currentDraftId] : null;
@@ -137,7 +138,17 @@ export function renderItems() {
   if (ro) return;
 
   body.querySelectorAll(".it-qty").forEach((el) => el.onchange = () => updateItem(el.dataset.id, { qty: Number(el.value) || 1 }));
-  body.querySelectorAll(".it-role").forEach((el) => el.onchange = () => updateItem(el.dataset.id, { role: el.value }));
+  body.querySelectorAll(".it-role").forEach((el) => el.onchange = () => {
+    const id = el.dataset.id;
+    const it = state.draftItems[id];
+    const newRole = el.value;
+    const patch = { role: newRole };
+    if (newRole && it && !it.hoursOverridden) {
+      const catalogEntry = Object.values(state.taskCatalog || {}).find((t) => t.category === it.category && t.task === it.task);
+      if (catalogEntry) patch.hours = getTaskHoursForRole(catalogEntry, newRole);
+    }
+    updateItem(id, patch);
+  });
   body.querySelectorAll(".it-hours").forEach((el) => el.onchange = () => updateItem(el.dataset.id, { hours: Number(el.value) || 0, hoursOverridden: true }));
   body.querySelectorAll(".it-notes").forEach((el) => el.onchange = () => updateItem(el.dataset.id, { notes: el.value }));
   body.querySelectorAll(".it-del").forEach((el) => el.onclick = () => {

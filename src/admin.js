@@ -86,10 +86,13 @@ export async function bootstrapDefaultsIfEmpty() {
   for (let i = 0; i < defaults.length; i++) {
     await db.collection("disciplines").add({ name: defaults[i], order: i });
   }
+  const defaultRoleNames = ["Tracking Specialist", "Analyst", "Engineer", "Lead"];
   for (const [category, tasks] of Object.entries(tasksByCategory)) {
     for (let i = 0; i < tasks.length; i++) {
-      const [task, defaultHours] = tasks[i];
-      await db.collection("task_catalog").add({ category, task, defaultHours, order: i });
+      const [task, hours] = tasks[i];
+      const hoursByRole = {};
+      defaultRoleNames.forEach((r) => { hoursByRole[r] = hours; });
+      await db.collection("task_catalog").add({ category, task, hoursByRole, order: i });
     }
   }
   const roles = [
@@ -245,6 +248,11 @@ async function persistTaskOrder(listEl) {
   }
 }
 
+export function getTaskHoursForRole(t, roleName) {
+  if (t.hoursByRole && Object.prototype.hasOwnProperty.call(t.hoursByRole, roleName)) return t.hoursByRole[roleName];
+  return t.defaultHours || 0; // fallback for tasks seeded before per-role hours existed
+}
+
 export function renderDisciplinesAdmin() {
   const list = document.getElementById("disciplinesList");
   if (!list) return;
@@ -253,22 +261,34 @@ export function renderDisciplinesAdmin() {
   list.innerHTML = ids.map((id) => {
     const d = state.disciplines[id];
     const tasks = Object.entries(state.taskCatalog || {}).filter(([, t]) => t.category === d.name).sort((a, b) => (a[1].order ?? 0) - (b[1].order ?? 0));
+    const applicableRoles = Object.values(state.rateCard)
+      .filter((r) => r.role && (!Array.isArray(r.categories) || r.categories.length === 0 || r.categories.includes(d.name)))
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const colCount = applicableRoles.length + 2;
+
     return `<div class="discipline-row" data-id="${id}" style="border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-        <input type="text" class="disc-name" value="${esc(d.name)}" style="font-weight:700; max-width:260px;">
+        <span style="display:flex; align-items:center; gap:8px;">
+          <span class="disc-name-display" style="font-weight:700;">${esc(d.name)}</span>
+          <input type="text" class="disc-name-input" value="${esc(d.name)}" style="display:none; font-weight:700; max-width:260px;">
+          <button type="button" class="disc-name-edit-btn" title="Rename discipline" style="all:unset; cursor:pointer; color:var(--ink-soft); font-size:13px;">\u270f\ufe0f</button>
+        </span>
         <button class="btn small danger disc-del">\u2715</button>
       </div>
-      <div class="sub" style="margin-top:8px;">Default tasks</div>
-      <ul class="task-drag-list" data-disc-id="${id}" style="list-style:none; padding:0; margin:6px 0;">
-        ${tasks.map(([tid, t]) => `<li class="task-drag-item" draggable="true" data-item-id="${tid}" style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); cursor:grab;">
-          <span style="display:flex; align-items:center; gap:8px;"><span class="sub" style="cursor:grab; user-select:none;">\u283f</span>${esc(t.task)}</span>
-          <span style="display:flex; align-items:center; gap:8px;">
-            <span class="sub">Default hrs</span>
-            <input type="number" class="task-default-hours" data-item-id="${tid}" value="${t.defaultHours || 0}" min="0" step="0.5" style="width:60px;">
-            <button class="btn small danger disc-task-del" data-item-id="${tid}">\u2715</button>
-          </span>
-        </li>`).join("") || `<li class="sub">No tasks yet.</li>`}
-      </ul>
+      <table class="task-hours-table" style="table-layout:fixed; width:100%; margin-top:10px; font-size:12.5px;">
+        <thead><tr>
+          <th>Default tasks</th>
+          ${applicableRoles.map((r) => `<th class="numc" style="width:70px;">${esc(r.role)}</th>`).join("")}
+          <th style="width:30px;"></th>
+        </tr></thead>
+        <tbody class="task-drag-list" data-disc-id="${id}">
+          ${tasks.map(([tid, t]) => `<tr class="task-drag-item" draggable="true" data-item-id="${tid}">
+            <td><span class="sub" style="cursor:grab; user-select:none;">\u283f</span> ${esc(t.task)}</td>
+            ${applicableRoles.map((r) => `<td class="numc"><input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5" style="width:100%; text-align:right;"></td>`).join("")}
+            <td><button class="btn small danger disc-task-del" data-item-id="${tid}">\u2715</button></td>
+          </tr>`).join("") || `<tr><td colspan="${colCount}" class="sub">No tasks yet.</td></tr>`}
+        </tbody>
+      </table>
       <div class="row-actions">
         <input type="text" class="new-task-name" placeholder="New task name" style="max-width:220px;">
         <button class="btn ghost small add-task-btn">+ Add</button>
@@ -278,13 +298,34 @@ export function renderDisciplinesAdmin() {
 
   list.querySelectorAll(".discipline-row").forEach((row) => {
     const id = row.dataset.id;
-    const nameInput = row.querySelector(".disc-name");
-    nameInput.onchange = () => renameDiscipline(id, nameInput.value);
+
+    const nameDisplay = row.querySelector(".disc-name-display");
+    const nameInput = row.querySelector(".disc-name-input");
+    const commitRename = () => {
+      renameDiscipline(id, nameInput.value);
+      nameInput.style.display = "none";
+      nameDisplay.style.display = "";
+    };
+    row.querySelector(".disc-name-edit-btn").onclick = () => {
+      nameDisplay.style.display = "none";
+      nameInput.style.display = "";
+      nameInput.focus();
+      nameInput.select();
+    };
+    nameInput.onblur = commitRename;
+    nameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") nameInput.blur();
+      if (e.key === "Escape") { nameInput.value = state.disciplines[id].name; nameInput.blur(); }
+    });
+
     row.querySelector(".disc-del").onclick = () => openDeleteDisciplineConfirm(id);
 
-    row.querySelectorAll(".task-default-hours").forEach((input) => {
+    row.querySelectorAll(".task-role-hours").forEach((input) => {
       input.onchange = () => {
-        db.collection("task_catalog").doc(input.dataset.itemId).update({ defaultHours: Number(input.value) || 0 }).catch(() => {});
+        const t = state.taskCatalog[input.dataset.itemId];
+        const hoursByRole = { ...(t.hoursByRole || {}) };
+        hoursByRole[input.dataset.role] = Number(input.value) || 0;
+        db.collection("task_catalog").doc(input.dataset.itemId).update({ hoursByRole }).catch(() => {});
       };
     });
     row.querySelectorAll(".disc-task-del").forEach((btn) => {
@@ -303,7 +344,7 @@ export function renderDisciplinesAdmin() {
       const input = row.querySelector(".new-task-name");
       const name = input.value.trim();
       if (!name) return;
-      await db.collection("task_catalog").add({ category: state.disciplines[id].name, task: name, defaultHours: 0 });
+      await db.collection("task_catalog").add({ category: state.disciplines[id].name, task: name, hoursByRole: {} });
       input.value = "";
     };
   });

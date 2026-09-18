@@ -227,13 +227,21 @@ export function renderReportColumns() {
   wireArchiveRows(wrap, renderReportColumns);
 }
 
+function catalogDefaultHours(t) {
+  if (t.hoursByRole && Object.keys(t.hoursByRole).length) {
+    const vals = Object.values(t.hoursByRole);
+    return vals.reduce((s, v) => s + (Number(v) || 0), 0) / vals.length;
+  }
+  return t.defaultHours || 0; // fallback for tasks seeded before per-role hours existed
+}
+
 export function computeTaskHoursComparison() {
   const rows = {}; // "category::task" -> { category, task, defaultHours, entries: [{clientName, hours, savedAt}] }
 
   // Seed with the current task catalog so tasks with no usage yet still show their default.
   Object.values(state.taskCatalog || {}).forEach((t) => {
     const key = `${t.category}::${t.task}`;
-    rows[key] = { category: t.category, task: t.task, defaultHours: t.defaultHours || 0, entries: [] };
+    rows[key] = { category: t.category, task: t.task, defaultHours: catalogDefaultHours(t), entries: [] };
   });
 
   Object.values(state.quotes).forEach((q) => {
