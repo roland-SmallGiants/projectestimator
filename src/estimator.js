@@ -145,13 +145,16 @@ export function renderItemTabs() {
   const d = currentDraft();
   if (!d) return;
   const wrap = document.getElementById("itemTabs");
-  const selected = (d.disciplines || []).filter((c) => CATEGORIES().includes(c));
+  const canonicalOrder = CATEGORIES();
+  const selected = (d.disciplines || [])
+    .filter((c) => canonicalOrder.includes(c))
+    .sort((a, b) => canonicalOrder.indexOf(a) - canonicalOrder.indexOf(b));
   if (!selected.includes(state.activeTab)) state.activeTab = selected[0] || null;
   wrap.innerHTML = selected.map((c) =>
-    `<button type="button" class="chip ${c === state.activeTab ? "on" : ""}" data-cat="${esc(c)}">${esc(c)}</button>`
+    `<button type="button" class="work-tab-item ${c === state.activeTab ? "active" : ""}" data-cat="${esc(c)}">${esc(c)}</button>`
   ).join("");
-  wrap.querySelectorAll(".chip").forEach((chip) => {
-    chip.onclick = () => { state.activeTab = chip.dataset.cat; renderItems(); };
+  wrap.querySelectorAll(".work-tab-item").forEach((tab) => {
+    tab.onclick = () => { state.activeTab = tab.dataset.cat; renderItems(); };
   });
 }
 

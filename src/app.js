@@ -5,7 +5,8 @@ import { initWelcomeScreen, renderWelcomeUserList, renderCurrentUserIndicator } 
 import {
   subscribeDrafts, renderDraftsList, createDraft, tryLockDraft, startHeartbeat, releaseLock, subscribeDraftItems, unsubscribeDraftItems,
 } from "./drafts.js";
-import { renderEstimatorView, isReadOnly, renderClientNameOptions } from "./estimator.js";
+import { renderEstimatorView, isReadOnly, renderClientNameOptions, buildQuoteSnapshot } from "./estimator.js";
+import { esc, money } from "./utils.js";
 import { subscribeQuotes, saveCurrentDraftAsQuote, buildArchiveRowHtml, wireArchiveRows } from "./quotes.js";
 import { renderReport, wireChartToggle } from "./report.js";
 import {
@@ -88,13 +89,24 @@ function wireEstimatorActions() {
     if (isReadOnly()) return;
     const draft = state.drafts[state.currentDraftId];
     const isEditingExisting = draft && draft.sourceQuoteId && state.quotes[draft.sourceQuoteId];
+    const snap = buildQuoteSnapshot();
+    const summary = `
+      <div style="border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-top:4px; font-size:13px;">
+        <div><strong>${esc(snap.clientName)}</strong></div>
+        <div class="sub" style="margin-top:2px;">${esc((snap.disciplines || []).join(", ")) || "No disciplines selected"}</div>
+        <div style="margin-top:6px; display:flex; justify-content:space-between;">
+          <span class="sub">${snap.grandHours.toLocaleString("nl-NL")} hrs \u00b7 ${snap.items.length} task${snap.items.length === 1 ? "" : "s"}</span>
+          <strong>${money(snap.finalPrice)}</strong>
+        </div>
+      </div>`;
     openConfirm(
       isEditingExisting ? "Update this quote in the archive?" : "Save this quote to the archive?",
-      isEditingExisting
-        ? "This updates the existing archived quote in place, stamped with today's edited date, and closes out this draft. This can't be undone from here."
-        : "This saves a read-only copy to the Quote Archive and closes out this draft. This can't be undone from here.",
+      (isEditingExisting
+        ? "This updates the existing archived quote in place, stamped with today's edited date, and closes out this draft."
+        : "This saves a read-only copy to the Quote Archive and closes out this draft.") + summary,
       async () => { await saveCurrentDraftAsQuote(); showView("drafts"); },
-      isEditingExisting ? "Yes, update" : "Yes, save"
+      "Yes",
+      "primary"
     );
   };
   document.getElementById("closeDraftBtn").onclick = async () => {

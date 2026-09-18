@@ -43,12 +43,14 @@ export function ensureModalRoot() {
   });
 }
 
-export function openConfirm(title, message, onConfirm, confirmLabel) {
+export function openConfirm(title, message, onConfirm, confirmLabel, confirmStyle) {
   ensureModalRoot();
   pendingAction = onConfirm;
   document.getElementById("genericConfirmTitle").textContent = title;
-  document.getElementById("genericConfirmMessage").textContent = message;
-  document.getElementById("genericConfirmConfirm").textContent = confirmLabel || "Yes, continue";
+  document.getElementById("genericConfirmMessage").innerHTML = message;
+  const confirmBtn = document.getElementById("genericConfirmConfirm");
+  confirmBtn.textContent = confirmLabel || "Yes, continue";
+  confirmBtn.style.background = confirmStyle === "primary" ? "" : "var(--rose)";
   document.getElementById("genericConfirmModalOverlay").style.display = "flex";
 }
 
