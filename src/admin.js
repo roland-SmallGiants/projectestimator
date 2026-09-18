@@ -276,11 +276,18 @@ export function renderDisciplinesAdmin() {
         <button class="btn small danger disc-del">\u2715</button>
       </div>
       <table class="task-hours-table" style="table-layout:fixed; width:100%; margin-top:10px; font-size:12.5px;">
-        <thead><tr>
-          <th>Default tasks</th>
-          ${applicableRoles.map((r) => `<th class="numc" style="width:70px;">${esc(r.role)}</th>`).join("")}
-          <th style="width:30px;"></th>
-        </tr></thead>
+        <thead>
+          <tr>
+            <th></th>
+            ${applicableRoles.length ? `<th class="numc sub" colspan="${applicableRoles.length}" style="font-weight:600; padding-bottom:2px;">Default Est. Hrs</th>` : ""}
+            <th></th>
+          </tr>
+          <tr>
+            <th>Default tasks</th>
+            ${applicableRoles.map((r) => `<th class="numc" style="width:90px;">${esc(r.role)}</th>`).join("")}
+            <th style="width:30px;"></th>
+          </tr>
+        </thead>
         <tbody class="task-drag-list" data-disc-id="${id}">
           ${tasks.map(([tid, t]) => `<tr class="task-drag-item" draggable="true" data-item-id="${tid}">
             <td><span class="sub" style="cursor:grab; user-select:none;">\u283f</span> ${esc(t.task)}</td>
