@@ -8,7 +8,7 @@ import {
 import { renderEstimatorView, isReadOnly, wireClientNameAutocomplete, buildQuoteSnapshot } from "./estimator.js";
 import { esc, money, wireAutocomplete } from "./utils.js";
 import { subscribeQuotes, saveCurrentDraftAsQuote, buildArchiveRowHtml, wireArchiveRows } from "./quotes.js";
-import { renderReport, wireChartToggle } from "./report.js";
+import { renderReport, wireChartToggle, wireHoursPerRoleSelect } from "./report.js";
 import {
   subscribeAdminCatalogs, bootstrapDefaultsIfEmpty, renderAdminView, wireAddRole, wireAddDiscipline, wireTeamAdd,
 } from "./admin.js";
@@ -27,6 +27,7 @@ async function boot() {
   wireEstimatorActions();
   wireDraftsActions();
   wireChartToggle();
+  wireHoursPerRoleSelect();
   wireAddRole();
   wireAddDiscipline();
   wireTeamAdd();

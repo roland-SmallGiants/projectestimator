@@ -172,7 +172,7 @@
       <div id="reportChartContainer" style="margin-top:14px;"></div>
     </section>
     <section class="card">
-      <h2 style="font-size:15px;">Default vs. actual hours</h2>
+      <h2 style="font-size:15px;">Default vs. Quoted hours</h2>
       <div class="sub">Grouped by discipline, ranked by how close actual usage tracked to the default \u2014 smallest deviation first. Only shows tasks that have actually been used in at least one quote. Expand a task to see the breakdown by client.</div>
       <table class="summary-style-table" style="margin-top:12px;">
         <thead><tr>
@@ -185,6 +185,18 @@
         </tr></thead>
         <tbody id="hoursComparisonBody"></tbody>
       </table>
+    </section>
+    <section class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+        <div>
+          <h2 style="font-size:15px;">Hours quoted per role</h2>
+          <div class="sub">Total hours quoted each month, by role.</div>
+        </div>
+        <select id="hoursPerRoleSelect" style="max-width:200px;">
+          <option value="">All roles</option>
+        </select>
+      </div>
+      <div id="hoursPerRoleChart" style="margin-top:14px;"></div>
     </section>
     <section class="card">
       <h2 style="font-size:15px;">Never used yet</h2>
