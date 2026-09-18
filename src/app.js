@@ -5,8 +5,8 @@ import { initWelcomeScreen, renderWelcomeUserList, renderCurrentUserIndicator } 
 import {
   subscribeDrafts, renderDraftsList, createDraft, tryLockDraft, startHeartbeat, releaseLock, subscribeDraftItems, unsubscribeDraftItems,
 } from "./drafts.js";
-import { renderEstimatorView, isReadOnly, renderClientNameOptions, buildQuoteSnapshot } from "./estimator.js";
-import { esc, money } from "./utils.js";
+import { renderEstimatorView, isReadOnly, wireClientNameAutocomplete, buildQuoteSnapshot } from "./estimator.js";
+import { esc, money, wireAutocomplete } from "./utils.js";
 import { subscribeQuotes, saveCurrentDraftAsQuote, buildArchiveRowHtml, wireArchiveRows } from "./quotes.js";
 import { renderReport, wireChartToggle } from "./report.js";
 import {
@@ -30,6 +30,8 @@ async function boot() {
   wireAddRole();
   wireAddDiscipline();
   wireTeamAdd();
+  wireClientNameAutocomplete();
+  wireQuoteSearchAutocomplete();
   window.addEventListener("open-draft", (e) => openDraft(e.detail.id));
   window.addEventListener("beforeunload", () => { if (state.currentDraftId) releaseLock(state.currentDraftId); });
 
@@ -63,7 +65,6 @@ async function boot() {
   subscribeQuotes(() => {
     if (document.getElementById("quotesView").style.display !== "none") renderQuotesView();
     if (document.getElementById("reportView").style.display !== "none") renderReport();
-    renderClientNameOptions();
   });
 }
 
@@ -146,14 +147,22 @@ function wireEstimatorActions() {
   };
 }
 
-function renderQuoteClientOptions() {
-  const list = document.getElementById("quoteClientOptions");
-  if (!list) return;
+function knownQuoteClientNames() {
   const names = new Set();
   Object.values(state.quotes || {}).forEach((q) => {
     if (q.clientName && q.clientName !== "(no client name)") names.add(q.clientName);
   });
-  list.innerHTML = [...names].sort((a, b) => a.localeCompare(b)).map((n) => `<option value="${esc(n)}"></option>`).join("");
+  return [...names];
+}
+
+function wireQuoteSearchAutocomplete() {
+  const inputEl = document.getElementById("quoteSearchInput");
+  const dropdownEl = document.getElementById("quoteSearchDropdown");
+  if (!inputEl || !dropdownEl) return;
+  wireAutocomplete(inputEl, dropdownEl, knownQuoteClientNames, (value) => {
+    inputEl.value = value;
+    renderQuotesView();
+  });
 }
 
 function computeDateRangeCutoff(filterValue) {
@@ -199,7 +208,6 @@ function renderQuotesView() {
 
   wrap.innerHTML = section("Pending", pendingIds) + section("Won / Lost", decidedIds);
   wireArchiveRows(wrap, renderQuotesView);
-  renderQuoteClientOptions();
 }
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("quoteSearchInput").addEventListener("input", renderQuotesView);

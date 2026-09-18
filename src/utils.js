@@ -126,6 +126,39 @@ export function avatarColorFor(name) {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
+export function wireAutocomplete(inputEl, dropdownEl, getOptions, onSelect) {
+  function highlightMatch(name, query) {
+    if (!query) return esc(name);
+    const idx = name.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return esc(name);
+    return esc(name.slice(0, idx)) + "<mark>" + esc(name.slice(idx, idx + query.length)) + "</mark>" + esc(name.slice(idx + query.length));
+  }
+
+  function render() {
+    const query = inputEl.value.trim();
+    const options = getOptions().filter((n) => !query || n.toLowerCase().includes(query.toLowerCase()));
+    if (!options.length) { dropdownEl.classList.remove("open"); dropdownEl.innerHTML = ""; return; }
+    dropdownEl.innerHTML = options.slice(0, 20)
+      .map((n) => `<div class="autocomplete-item" data-value="${esc(n)}">${highlightMatch(n, query)}</div>`)
+      .join("");
+    dropdownEl.classList.add("open");
+    dropdownEl.querySelectorAll(".autocomplete-item").forEach((item) => {
+      item.onmousedown = (e) => {
+        e.preventDefault(); // fires before the input's blur, so the click registers before the dropdown closes
+        inputEl.value = item.dataset.value;
+        dropdownEl.classList.remove("open");
+        onSelect(item.dataset.value);
+      };
+    });
+  }
+
+  inputEl.addEventListener("focus", render);
+  inputEl.addEventListener("input", render);
+  inputEl.addEventListener("blur", () => {
+    setTimeout(() => dropdownEl.classList.remove("open"), 100);
+  });
+}
+
 export function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }

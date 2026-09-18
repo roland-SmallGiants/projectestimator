@@ -1,6 +1,6 @@
 import { db } from "./firebase-init.js";
 import { state, CATEGORIES, rateForRole, effectiveHours, sortedRateIds } from "./state.js";
-import { esc, money, moneyPlain, notesIcon, levenshtein, normalizeClientName } from "./utils.js";
+import { esc, money, moneyPlain, notesIcon, levenshtein, normalizeClientName, wireAutocomplete } from "./utils.js";
 import { seedDraftItemsForDiscipline, lockOwner } from "./drafts.js";
 import { getTaskHoursForRole } from "./admin.js";
 
@@ -45,10 +45,15 @@ function knownClientNames() {
   return [...names];
 }
 
-export function renderClientNameOptions() {
-  const list = document.getElementById("clientNameOptions");
-  if (!list) return;
-  list.innerHTML = knownClientNames().sort((a, b) => a.localeCompare(b)).map((n) => `<option value="${esc(n)}"></option>`).join("");
+export function wireClientNameAutocomplete() {
+  const inputEl = document.getElementById("clientNameInput");
+  const dropdownEl = document.getElementById("clientNameDropdown");
+  if (!inputEl || !dropdownEl) return;
+  wireAutocomplete(inputEl, dropdownEl, knownClientNames, (value) => {
+    if (isReadOnly()) return;
+    document.getElementById("clientNameSuggestion").innerHTML = "";
+    db.collection("drafts").doc(state.currentDraftId).update({ clientName: value }).catch(() => {});
+  });
 }
 
 function checkClientNameSuggestion() {
