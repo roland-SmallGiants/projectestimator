@@ -288,7 +288,7 @@ export function renderDisciplinesAdmin() {
             <th rowspan="2" style="width:30px;"></th>
           </tr>
           <tr>
-            ${allRoles.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px;">${esc(r.role)}</th>`).join("")}
+            ${allRoles.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px;">${isApplicable(r) ? esc(r.role) : ""}</th>`).join("")}
           </tr>
         </thead>
         <tbody class="task-drag-list" data-disc-id="${id}">
