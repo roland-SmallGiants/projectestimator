@@ -142,12 +142,6 @@ function wireRoleDragAndDrop(body) {
   });
 }
 
-function chunk(arr, size) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
 export function renderRateCard() {
   const body = document.getElementById("rateCardBody");
   if (!body) return;
@@ -157,9 +151,9 @@ export function renderRateCard() {
   body.innerHTML = ids.map((id) => {
     const r = state.rateCard[id];
     const cats = Array.isArray(r.categories) ? r.categories : [];
-    const rows = chunk(allCategories, 3).map((group) => `<div class="chips small role-cat-chips" data-id="${id}" style="margin-bottom:4px;">
-        ${group.map((c) => `<button type="button" class="chip ${cats.includes(c) ? "on" : ""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}
-      </div>`).join("");
+    const rows = `<div class="chips small role-cat-chips" data-id="${id}">
+        ${allCategories.map((c) => `<button type="button" class="chip ${cats.includes(c) ? "on" : ""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}
+      </div>`;
     return `<tr class="role-drag-item" draggable="true" data-id="${id}">
       <td><span style="display:flex; align-items:center; gap:8px;"><span class="sub" style="cursor:grab; user-select:none;">\u283f</span><input type="text" class="role-name" value="${esc(r.role)}"></span></td>
       <td class="numc"><input type="number" class="role-rate" value="${r.rate}" min="0" step="1" style="text-align:right; width:calc(100% - 6px); margin-right:6px;"></td>
