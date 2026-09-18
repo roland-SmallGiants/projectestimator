@@ -445,14 +445,16 @@ function metricLabelCompact(val, withCurrency) {
 }
 function buildBarLabel(x, barW, y, h, val, fontSize, insideTextColor) {
   if (val <= 0) return "";
-  const fitsInside = h >= fontSize + 10; // enough vertical room to center the label inside the bar
+  const label = metricLabelCompact(val, false); // no currency symbol, ever
+  const estLabelLength = label.length * fontSize * 0.62 + 4; // rough estimate of the rotated text's length
   const cx = x + barW / 2;
+  const fitsInside = h >= estLabelLength;
   if (fitsInside) {
-    const cy = y + h / 2 + fontSize * 0.35;
-    return `<text x="${cx}" y="${cy}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="${insideTextColor || "#1C1B33"}" pointer-events="none" transform="rotate(-90 ${cx} ${cy})">${metricLabelCompact(val, true)}</text>`;
+    const cy = y + estLabelLength / 2 + 3; // anchored near the top of the column, text runs down into it
+    return `<text x="${cx}" y="${cy}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="${insideTextColor || "#1C1B33"}" pointer-events="none" transform="rotate(90 ${cx} ${cy})">${label}</text>`;
   }
   const cy = y - 5;
-  return `<text x="${cx}" y="${cy}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="var(--ink)" pointer-events="none" transform="rotate(-90 ${cx} ${cy})">${metricLabelCompact(val, false)}</text>`;
+  return `<text x="${cx}" y="${cy}" text-anchor="middle" font-size="${fontSize}" font-weight="700" fill="var(--ink)" pointer-events="none" transform="rotate(90 ${cx} ${cy})">${label}</text>`;
 }
 
 function renderMultiRoleChart(wrap, months, keys, rolesToShow, padLeft, padBottom, padTop, padRight, plotW, plotH, groupW) {
