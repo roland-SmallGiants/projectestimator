@@ -264,7 +264,7 @@ export function renderDisciplinesAdmin() {
     const applicableRoles = Object.values(state.rateCard)
       .filter((r) => r.role && (!Array.isArray(r.categories) || r.categories.length === 0 || r.categories.includes(d.name)))
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    const colCount = applicableRoles.length + 2;
+    const colCount = applicableRoles.length + 3;
 
     return `<div class="discipline-row" data-id="${id}" style="border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
@@ -275,15 +275,17 @@ export function renderDisciplinesAdmin() {
         </span>
         <button class="btn small danger disc-del">\u2715</button>
       </div>
-      <table class="task-hours-table" style="table-layout:fixed; width:100%; margin-top:10px; font-size:12.5px;">
+      <table class="task-hours-table" style="table-layout:fixed; width:100%; max-width:100%; margin-top:10px; font-size:12.5px;">
         <thead>
           <tr>
+            <th style="width:30%;"></th>
             <th></th>
             ${applicableRoles.length ? `<th class="numc sub" colspan="${applicableRoles.length}" style="font-weight:600; padding-bottom:2px;">Default Est. Hrs</th>` : ""}
-            <th></th>
+            <th style="width:30px;"></th>
           </tr>
           <tr>
-            <th>Default tasks</th>
+            <th style="width:30%;">Default tasks</th>
+            <th></th>
             ${applicableRoles.map((r) => `<th class="numc" style="width:45px;">${esc(r.role)}</th>`).join("")}
             <th style="width:30px;"></th>
           </tr>
@@ -291,6 +293,7 @@ export function renderDisciplinesAdmin() {
         <tbody class="task-drag-list" data-disc-id="${id}">
           ${tasks.map(([tid, t]) => `<tr class="task-drag-item" draggable="true" data-item-id="${tid}">
             <td><span class="sub" style="cursor:grab; user-select:none;">\u283f</span> ${esc(t.task)}</td>
+            <td></td>
             ${applicableRoles.map((r) => `<td class="numc"><input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5" style="width:100%; text-align:right;"></td>`).join("")}
             <td><button class="btn small danger disc-task-del" data-item-id="${tid}">\u2715</button></td>
           </tr>`).join("") || `<tr><td colspan="${colCount}" class="sub">No tasks yet.</td></tr>`}
