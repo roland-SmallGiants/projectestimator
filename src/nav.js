@@ -19,8 +19,8 @@ const PAGE_COPY = {
     subtitle: "Every quote your team has put together, all in one place. Search by client, revisit the full breakdown, and track whether each one was won or lost.",
   },
   report: {
-    title: "Client Work Estimator",
-    subtitle: "Shared with your team. Multiple quotes can be in progress at once \u2014 everyone sees the same drafts list.",
+    title: "Reporting",
+    subtitle: "A living picture of the business behind the quotes \u2014 how much revenue is moving through the pipeline, how it's trending month over month, and where the wins and losses are landing. Everything here updates automatically as quotes get saved, edited, and marked Won or Lost, so it's always a current read on where things stand.",
   },
   admin: {
     title: "Client Work Estimator",
