@@ -87,6 +87,21 @@ app.post("/api/productive/debug/create-folder", async (req, res) => {
   }
 });
 
+// Temporary helper: fetches one task's full raw JSON:API response, so we
+// can see exactly what Productive stored (e.g. whether tag_list actually
+// took effect) instead of guessing from the UI.
+app.get("/api/productive/debug/task/:id", async (req, res) => {
+  try {
+    const r = await fetch(`https://api.productive.io/api/v2/tasks/${encodeURIComponent(req.params.id)}`, {
+      headers: productiveHeaders(),
+    });
+    const body = await r.json().catch(() => ({}));
+    res.status(r.status).json(body);
+  } catch (err) {
+    res.status(502).json({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
+});
+
 app.post("/api/productive/create-tasks", async (req, res) => {
   if (!isConfigured) {
     return res.status(400).json({
