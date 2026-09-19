@@ -68,6 +68,7 @@ td { padding:8px; border-bottom:1px solid var(--line); }
 .archive-meta-value { font-size:12.5px; color:var(--ink); white-space:nowrap; }
 .archive-meta-value-wrap { white-space:normal; overflow-wrap:break-word; }
 .archive-row { border:1px solid var(--line); border-radius:8px; background:var(--bg-raised); padding:14px; }
+.archive-row-open { border-left:3px solid var(--accent); padding-left:11px; background:#242342; }
 .archive-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
 .archive-detail { display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); }
 .archive-detail.open { display:block; }

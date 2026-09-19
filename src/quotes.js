@@ -153,7 +153,7 @@ export function buildArchiveRowHtml(id) {
     ${statusDateStr ? `<span class="sub">${q.status === "won" ? "Won" : "Lost"} on ${statusDateStr}</span>` : ""}
   </div>`;
 
-  return `<div class="archive-row" data-id="${id}">
+  return `<div class="archive-row ${isOpen ? "archive-row-open" : ""}" data-id="${id}">
     <div class="archive-head">
       <div class="archive-collapse-toggle" style="cursor:pointer;">
         <div class="archive-meta-grid">
@@ -233,8 +233,23 @@ export function wireArchiveRows(wrap, rerender) {
   wrap.querySelectorAll(".archive-collapse-toggle").forEach((el) => {
     el.onclick = () => {
       const rowId = el.closest(".archive-row").dataset.id;
-      if (state.openArchiveDetails.has(rowId)) state.openArchiveDetails.delete(rowId);
-      else state.openArchiveDetails.add(rowId);
+      const wasOpen = state.openArchiveDetails.has(rowId);
+      const q = state.quotes[rowId];
+      const isDecided = q && (q.status === "won" || q.status === "lost");
+
+      if (!wasOpen) {
+        // Accordion behavior: opening a quote closes any other open quote in
+        // the same section (Pending vs Won/Lost), but the two sections track
+        // their own open quote independently of each other.
+        [...state.openArchiveDetails].forEach((openId) => {
+          const openQ = state.quotes[openId];
+          const openIsDecided = openQ && (openQ.status === "won" || openQ.status === "lost");
+          if (openIsDecided === isDecided) state.openArchiveDetails.delete(openId);
+        });
+        state.openArchiveDetails.add(rowId);
+      } else {
+        state.openArchiveDetails.delete(rowId);
+      }
       rerender();
     };
   });
