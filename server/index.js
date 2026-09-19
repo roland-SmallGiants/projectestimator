@@ -99,7 +99,8 @@ app.post("/api/productive/create-tasks", async (req, res) => {
   if (!quoteId || !Array.isArray(items) || !items.length) {
     return res.status(400).json({ ok: false, error: "Request must include quoteId and a non-empty items array." });
   }
-  const taskListName = (projectDescription || "").trim() || `${clientName || "Quote"} (no description)`;
+  const desc = (projectDescription || "").trim();
+  const taskListName = desc ? `${clientName || "Unknown client"} \u2014 ${desc}` : (clientName || "Quote");
 
   let taskListId;
   try {
