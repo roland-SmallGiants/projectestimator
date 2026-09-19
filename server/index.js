@@ -63,10 +63,12 @@ app.post("/api/productive/create-tasks", async (req, res) => {
     });
   }
 
+  const workflowStatusId = await findWorkflowStatusIdByName("Ready for planning").catch(() => null);
+
   const results = [];
   for (const item of items) {
     try {
-      const productiveTaskId = await createTaskInProductive(item, { clientName, taskListId });
+      const productiveTaskId = await createTaskInProductive(item, { clientName, taskListId, workflowStatusId });
       results.push({ task: item.task, ok: true, productiveTaskId });
     } catch (err) {
       results.push({ task: item.task, ok: false, error: String(err && err.message ? err.message : err) });
@@ -74,7 +76,7 @@ app.post("/api/productive/create-tasks", async (req, res) => {
   }
 
   const allOk = results.every((r) => r.ok);
-  res.status(allOk ? 200 : 207).json({ ok: allOk, quoteId, taskListName, results });
+  res.status(allOk ? 200 : 207).json({ ok: allOk, quoteId, taskListName, statusApplied: Boolean(workflowStatusId), results });
 });
 
 // Looks for an existing task list with this exact name in the configured
@@ -108,12 +110,28 @@ async function findOrCreateTaskList(name) {
   return createBody.data.id;
 }
 
+// Looks up the id of a workflow status by name (e.g. "Ready for planning")
+// within the configured project. Returns null if not found, rather than
+// throwing — a missing/renamed status shouldn't block task creation
+// entirely, it'll just leave the task on Productive's default status.
+async function findWorkflowStatusIdByName(name) {
+  const res = await fetch(
+    `https://api.productive.io/api/v2/workflow_statuses?filter[project_id]=${encodeURIComponent(PRODUCTIVE_PROJECT_ID)}&filter[name]=${encodeURIComponent(name)}`,
+    { headers: productiveHeaders() }
+  );
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || !Array.isArray(body.data)) return null;
+  const match = body.data.find((s) => s.attributes && s.attributes.name === name);
+  return match ? match.id : null;
+}
+
 async function createTaskInProductive(item, context) {
   // item: { task, category, role, hours, qty, notes }
   // context: { clientName, taskListId }
   const title = item.task;
   const description = item.notes || "";
   const initialEstimate = Math.round((Number(item.hours) || 0) * 60); // Productive tracks estimates in minutes
+  const tagList = [context.clientName, item.category, item.role].filter(Boolean).join(", ");
 
   const res = await fetch("https://api.productive.io/api/v2/tasks", {
     method: "POST",
@@ -121,11 +139,16 @@ async function createTaskInProductive(item, context) {
     body: JSON.stringify({
       data: {
         type: "tasks",
-        attributes: { title, description, initial_estimate: initialEstimate, project_id: PRODUCTIVE_PROJECT_ID, tag_list: context.clientName, private: true },
+        attributes: { title, description, initial_estimate: initialEstimate, project_id: PRODUCTIVE_PROJECT_ID, tag_list: tagList, private: true },
         relationships: {
           task_list: {
             data: { type: "task_lists", id: context.taskListId },
           },
+          ...(context.workflowStatusId ? {
+            workflow_status: {
+              data: { type: "workflow_statuses", id: context.workflowStatusId },
+            },
+          } : {}),
         },
       },
     }),
