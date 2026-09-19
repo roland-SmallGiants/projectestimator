@@ -164,7 +164,7 @@ export function buildArchiveRowHtml(id) {
         </div>
       </div>
       <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-        ${outcomeChips}
+        ${(!isOpen || q.status === "won" || q.status === "lost") ? outcomeChips : ""}
         ${isOpen && q.status !== "won" && q.status !== "lost" ? `<div style="display:flex; gap:10px;">
           <button class="btn ghost small archive-load-estimator">Edit</button>
           <button class="btn ghost small archive-delete" style="color:var(--rose);">Delete</button>
