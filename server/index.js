@@ -62,6 +62,31 @@ app.get("/api/productive/debug/folders", async (req, res) => {
   }
 });
 
+// Temporary helper: creates a dedicated folder (default name "Imported from
+// Estimator") in the configured project, so tasks sent from this app land
+// somewhere clearly labeled instead of a generic folder. Pass ?name=... to
+// use a different name. Safe to remove once PRODUCTIVE_FOLDER_ID is set.
+app.post("/api/productive/debug/create-folder", async (req, res) => {
+  if (!PRODUCTIVE_API_TOKEN || !PRODUCTIVE_ORGANIZATION_ID || !PRODUCTIVE_PROJECT_ID) {
+    return res.status(400).json({ ok: false, error: "PRODUCTIVE_API_TOKEN, PRODUCTIVE_ORGANIZATION_ID, and PRODUCTIVE_PROJECT_ID must all be set first." });
+  }
+  const name = (req.query.name || "Imported from Estimator").toString();
+  try {
+    const r = await fetch("https://api.productive.io/api/v2/folders", {
+      method: "POST",
+      headers: productiveHeaders(),
+      body: JSON.stringify({
+        data: { type: "folders", attributes: { name, project_id: PRODUCTIVE_PROJECT_ID } },
+      }),
+    });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) return res.status(502).json({ ok: false, error: body });
+    res.json({ ok: true, id: body.data.id, name: body.data.attributes && body.data.attributes.name });
+  } catch (err) {
+    res.status(502).json({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
+});
+
 app.post("/api/productive/create-tasks", async (req, res) => {
   if (!isConfigured) {
     return res.status(400).json({
@@ -88,13 +113,42 @@ app.post("/api/productive/create-tasks", async (req, res) => {
 
   const workflowStatusId = await findWorkflowStatusIdByName("Ready for planning").catch(() => null);
 
+  // Group line items by discipline: each discipline becomes one parent task,
+  // and each of its line items becomes a subtask underneath that task.
+  const byDiscipline = new Map();
+  items.forEach((item) => {
+    const key = item.category || "General";
+    if (!byDiscipline.has(key)) byDiscipline.set(key, []);
+    byDiscipline.get(key).push(item);
+  });
+
   const results = [];
-  for (const item of items) {
+  for (const [discipline, disciplineItems] of byDiscipline) {
+    const totalHours = disciplineItems.reduce((s, it) => s + (Number(it.hours) || 0), 0);
+    let parentTaskId;
     try {
-      const productiveTaskId = await createTaskInProductive(item, { clientName, taskListId, workflowStatusId });
-      results.push({ task: item.task, ok: true, productiveTaskId });
+      parentTaskId = await createTaskInProductive(
+        { task: discipline, category: discipline, hours: totalHours, notes: "" },
+        { clientName, taskListId, workflowStatusId }
+      );
+      results.push({ task: discipline, ok: true, productiveTaskId: parentTaskId, isParent: true });
     } catch (err) {
-      results.push({ task: item.task, ok: false, error: String(err && err.message ? err.message : err) });
+      results.push({ task: discipline, ok: false, error: String(err && err.message ? err.message : err), isParent: true });
+      // Can't create subtasks without a parent — mark each of this
+      // discipline's items as failed too, rather than silently skipping them.
+      disciplineItems.forEach((item) => {
+        results.push({ task: item.task, ok: false, error: `Skipped: parent task "${discipline}" failed to create.` });
+      });
+      continue;
+    }
+
+    for (const item of disciplineItems) {
+      try {
+        const productiveTaskId = await createTaskInProductive(item, { clientName, taskListId, workflowStatusId, parentTaskId });
+        results.push({ task: item.task, ok: true, productiveTaskId });
+      } catch (err) {
+        results.push({ task: item.task, ok: false, error: String(err && err.message ? err.message : err) });
+      }
     }
   }
 
@@ -150,7 +204,7 @@ async function findWorkflowStatusIdByName(name) {
 
 async function createTaskInProductive(item, context) {
   // item: { task, category, role, hours, qty, notes }
-  // context: { clientName, taskListId }
+  // context: { clientName, taskListId, workflowStatusId, parentTaskId? }
   const title = item.task;
   const description = item.notes || "";
   const initialEstimate = Math.round((Number(item.hours) || 0) * 60); // Productive tracks estimates in minutes
@@ -170,6 +224,11 @@ async function createTaskInProductive(item, context) {
           ...(context.workflowStatusId ? {
             workflow_status: {
               data: { type: "workflow_statuses", id: context.workflowStatusId },
+            },
+          } : {}),
+          ...(context.parentTaskId ? {
+            parent_task: {
+              data: { type: "tasks", id: context.parentTaskId },
             },
           } : {}),
         },
