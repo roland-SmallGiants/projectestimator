@@ -197,18 +197,45 @@ function renderQuotesView() {
   }
 
   const pendingIds = ids.filter((id) => state.quotes[id].status !== "won" && state.quotes[id].status !== "lost");
-  const decidedIds = ids.filter((id) => state.quotes[id].status === "won" || state.quotes[id].status === "lost");
+  const wonIds = ids.filter((id) => state.quotes[id].status === "won");
+  const lostIds = ids.filter((id) => state.quotes[id].status === "lost");
+  const wonTotal = wonIds.reduce((s, id) => s + (state.quotes[id].finalPrice || 0), 0);
+  const lostTotal = lostIds.reduce((s, id) => s + (state.quotes[id].finalPrice || 0), 0);
+  const decidedCount = wonIds.length + lostIds.length;
+  const winRate = decidedCount ? Math.round((wonIds.length / decidedCount) * 100) : null;
 
-  const section = (title, list) => `<section class="card">
-    <h2 style="font-size:15px;">${title}</h2>
-    <div class="sub">${list.length} quote${list.length === 1 ? "" : "s"}</div>
+  const pendingSection = `<section class="card">
+    <h2 style="font-size:15px;">Pending</h2>
+    <div class="sub">${pendingIds.length} quote${pendingIds.length === 1 ? "" : "s"}</div>
     <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
-      ${list.length ? list.map((id) => buildArchiveRowHtml(id)).join("") : `<div class="task-empty">No quotes here yet.</div>`}
+      ${pendingIds.length ? pendingIds.map((id) => buildArchiveRowHtml(id)).join("") : `<div class="task-empty">No quotes here yet.</div>`}
     </div>
   </section>`;
 
-  wrap.innerHTML = section("Pending", pendingIds) + section("Won / Lost", decidedIds);
+  const activeTab = state.wonLostActiveTab === "lost" ? "lost" : "won";
+  const activeIds = activeTab === "won" ? wonIds : lostIds;
+  const wonLostSection = `<section class="card">
+    <h2 style="font-size:15px;">Won / Lost</h2>
+    <div class="sub">
+      ${wonIds.length} won (${money(wonTotal)}) \u00b7 ${lostIds.length} lost (${money(lostTotal)})${winRate !== null ? ` \u00b7 ${winRate}% win rate` : ""}
+    </div>
+    <table class="cell-toggle" id="wonLostTabToggle" style="margin-top:14px;"><tr>
+      <td class="${activeTab === "won" ? "active" : ""}" data-tab="won">Won</td>
+      <td class="${activeTab === "lost" ? "active" : ""}" data-tab="lost">Lost</td>
+    </tr></table>
+    <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
+      ${activeIds.length ? activeIds.map((id) => buildArchiveRowHtml(id)).join("") : `<div class="task-empty">No ${activeTab} quotes here yet.</div>`}
+    </div>
+  </section>`;
+
+  wrap.innerHTML = pendingSection + wonLostSection;
   wireArchiveRows(wrap, renderQuotesView);
+  document.querySelectorAll("#wonLostTabToggle td").forEach((cell) => {
+    cell.onclick = () => {
+      state.wonLostActiveTab = cell.dataset.tab;
+      renderQuotesView();
+    };
+  });
 }
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("quoteSearchInput").addEventListener("input", renderQuotesView);
