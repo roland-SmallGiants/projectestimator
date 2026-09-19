@@ -60,7 +60,14 @@ app.post("/api/productive/create-tasks", async (req, res) => {
 async function createTaskInProductive(item, context) {
   // item: { task, category, role, hours, qty, notes }
   // context: { clientName }
-  const title = `${item.task} \u2014 ${context.clientName} (${item.hours}h, ${item.role})`;
+  const title = item.task;
+  const description = [
+    `Discipline: ${item.category}`,
+    `Role: ${item.role}`,
+    `Estimated hours: ${item.hours}`,
+    item.notes ? `Notes: ${item.notes}` : null,
+  ].filter(Boolean).join("\n");
+  const initialEstimate = Math.round((Number(item.hours) || 0) * 60); // Productive tracks estimates in minutes
 
   const res = await fetch("https://api.productive.io/api/v2/tasks", {
     method: "POST",
@@ -72,7 +79,7 @@ async function createTaskInProductive(item, context) {
     body: JSON.stringify({
       data: {
         type: "tasks",
-        attributes: { title, project_id: PRODUCTIVE_PROJECT_ID },
+        attributes: { title, description, initial_estimate: initialEstimate, project_id: PRODUCTIVE_PROJECT_ID, tag_list: context.clientName, private: true },
         relationships: {
           task_list: {
             data: { type: "task_lists", id: PRODUCTIVE_TASK_LIST_ID },
