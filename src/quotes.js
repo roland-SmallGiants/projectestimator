@@ -156,8 +156,10 @@ export function buildArchiveRowHtml(id) {
   return `<div class="archive-row" data-id="${id}">
     <div class="archive-head">
       <div class="archive-collapse-toggle" style="cursor:pointer;">
-        <div class="archive-meta-header-row"><span class="archive-meta-label">Client</span><span class="archive-meta-label">Saved</span><span class="archive-meta-label">Description</span></div>
-        <div class="archive-meta-value-row">
+        <div class="archive-meta-grid">
+          <span class="archive-meta-label">Client</span>
+          <span class="archive-meta-label">Saved</span>
+          <span class="archive-meta-label">Description</span>
           <span class="name"><span style="display:inline-block; width:14px;">${isOpen ? "\u25be" : "\u25b8"}</span>${esc(q.clientName)}</span>
           <span class="archive-meta-value">${dateStr}${q.createdBy ? ` by ${esc(q.createdBy)}` : ""}</span>
           <span class="archive-meta-value archive-meta-value-wrap">${esc(q.projectDescription || "") || "\u2014"}</span>
