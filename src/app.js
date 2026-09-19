@@ -12,7 +12,7 @@ import { renderReport, wireChartToggle, wireHoursPerRoleSelect } from "./report.
 import {
   subscribeAdminCatalogs, bootstrapDefaultsIfEmpty, renderAdminView, wireAddRole, wireAddDiscipline, wireTeamAdd,
 } from "./admin.js";
-import { setStatus, showView, wireNav } from "./nav.js";
+import { setStatus, showView, wireNav, parseCurrentPath } from "./nav.js";
 
 async function boot() {
   ensureModalRoot();
@@ -35,6 +35,7 @@ async function boot() {
   wireQuoteSearchAutocomplete();
   window.addEventListener("open-draft", (e) => openDraft(e.detail.id));
   window.addEventListener("beforeunload", () => { if (state.currentDraftId) releaseLock(state.currentDraftId); });
+  window.addEventListener("popstate", () => routeFromUrl(false));
 
   bootstrapDefaultsIfEmpty().catch((e) => setStatus("Setup error: " + e.message + " — check src/firebase-config.js has your real project values.", true));
 
@@ -67,15 +68,34 @@ async function boot() {
     if (document.getElementById("quotesView").style.display !== "none") renderQuotesView();
     if (document.getElementById("reportView").style.display !== "none") renderReport();
   });
+
+  routeFromUrl(true);
 }
 
-async function openDraft(id) {
+// Reads the current URL and shows the matching view. Used both for the very
+// first load (isInitial: true, so it replaces history instead of pushing a
+// redundant entry) and for browser back/forward navigation via popstate.
+async function routeFromUrl(isInitial) {
+  const { view, draftId } = parseCurrentPath();
+  if (view === "estimator" && draftId) {
+    await openDraft(draftId, { updateUrl: false });
+  } else {
+    if (state.currentDraftId) {
+      await releaseLock(state.currentDraftId);
+      state.currentDraftId = null;
+      unsubscribeDraftItems();
+    }
+    showView(view, { updateUrl: isInitial, replace: isInitial });
+  }
+}
+
+async function openDraft(id, options = {}) {
   if (state.currentDraftId && state.currentDraftId !== id) await releaseLock(state.currentDraftId);
   const locked = await tryLockDraft(id);
   state.currentDraftId = id;
   subscribeDraftItems(id, () => renderEstimatorView());
   if (locked) startHeartbeat(id);
-  showView("estimator");
+  showView("estimator", { draftId: id, updateUrl: options.updateUrl !== false, replace: options.replace });
   renderEstimatorView();
 }
 
