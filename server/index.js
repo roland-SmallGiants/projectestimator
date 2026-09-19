@@ -18,7 +18,7 @@ const PRODUCTIVE_ORGANIZATION_ID = process.env.PRODUCTIVE_ORGANIZATION_ID || "";
 const PRODUCTIVE_PROJECT_ID = process.env.PRODUCTIVE_PROJECT_ID || "";
 const PRODUCTIVE_TASK_LIST_ID = process.env.PRODUCTIVE_TASK_LIST_ID || "";
 
-const isConfigured = Boolean(PRODUCTIVE_API_TOKEN && PRODUCTIVE_ORGANIZATION_ID && PRODUCTIVE_TASK_LIST_ID);
+const isConfigured = Boolean(PRODUCTIVE_API_TOKEN && PRODUCTIVE_ORGANIZATION_ID && PRODUCTIVE_TASK_LIST_ID && PRODUCTIVE_PROJECT_ID);
 
 const app = express();
 app.use(express.json());
@@ -33,7 +33,7 @@ app.post("/api/productive/create-tasks", async (req, res) => {
   if (!isConfigured) {
     return res.status(400).json({
       ok: false,
-      error: "Productive isn't configured on the server yet. Set PRODUCTIVE_API_TOKEN, PRODUCTIVE_ORGANIZATION_ID, and PRODUCTIVE_TASK_LIST_ID in server/.env and restart.",
+      error: "Productive isn't configured on the server yet. Set PRODUCTIVE_API_TOKEN, PRODUCTIVE_ORGANIZATION_ID, PRODUCTIVE_PROJECT_ID, and PRODUCTIVE_TASK_LIST_ID in server/.env and restart.",
     });
   }
 
@@ -72,7 +72,7 @@ async function createTaskInProductive(item, context) {
     body: JSON.stringify({
       data: {
         type: "tasks",
-        attributes: { title },
+        attributes: { title, project_id: PRODUCTIVE_PROJECT_ID },
         relationships: {
           task_list: {
             data: { type: "task_lists", id: PRODUCTIVE_TASK_LIST_ID },
