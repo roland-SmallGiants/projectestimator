@@ -192,11 +192,16 @@ export function wireArchiveRows(wrap, rerender) {
       const id = btn.closest(".archive-row").dataset.id;
       const q = state.quotes[id];
       if (!q) return;
+      const validItems = q.items.filter((it) => it.role && (Number(it.hours) || 0) > 0);
+      if (!validItems.length) {
+        alert("This quote has no tasks with a role assigned, so there's nothing to send to Productive. Assign roles to its tasks first (via Edit) if you want to send it.");
+        return;
+      }
       openConfirm(
         "Send this quote's tasks to Productive?",
-        `This creates ${q.items.filter((it) => it.role && (Number(it.hours) || 0) > 0).length} task(s) in Productive, one per line item, for "${esc(q.clientName)}". This can't be undone from here \u2014 duplicate tasks would need to be removed in Productive directly.`,
+        `This creates ${validItems.length} task(s) in Productive, one per line item, for "${esc(q.clientName)}". This can't be undone from here \u2014 duplicate tasks would need to be removed in Productive directly.`,
         async () => {
-          const items = q.items.filter((it) => it.role && (Number(it.hours) || 0) > 0);
+          const items = validItems;
           try {
             const res = await fetch("/api/productive/create-tasks", {
               method: "POST",
@@ -206,6 +211,12 @@ export function wireArchiveRows(wrap, rerender) {
             const data = await res.json().catch(() => ({}));
             if (res.ok && data.ok) {
               await db.collection("quotes").doc(id).update({ productiveSyncedAt: nowTimestamp() }).catch(() => {});
+            } else if (data.results) {
+              const failed = data.results.filter((r) => !r.ok);
+              const summary = failed.length
+                ? failed.map((r) => `${r.task}: ${r.error}`).join("\n")
+                : "No tasks were created.";
+              alert(`Sending to Productive failed for ${failed.length} of ${data.results.length} task(s):\n\n${summary}`);
             } else {
               alert("Sending to Productive failed: " + (data.error || `HTTP ${res.status}`));
             }
