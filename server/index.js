@@ -19,8 +19,9 @@ const PORT = process.env.PORT || 3001;
 const PRODUCTIVE_API_TOKEN = process.env.PRODUCTIVE_API_TOKEN || "";
 const PRODUCTIVE_ORGANIZATION_ID = process.env.PRODUCTIVE_ORGANIZATION_ID || "";
 const PRODUCTIVE_PROJECT_ID = process.env.PRODUCTIVE_PROJECT_ID || "";
+const PRODUCTIVE_FOLDER_ID = process.env.PRODUCTIVE_FOLDER_ID || "";
 
-const isConfigured = Boolean(PRODUCTIVE_API_TOKEN && PRODUCTIVE_ORGANIZATION_ID && PRODUCTIVE_PROJECT_ID);
+const isConfigured = Boolean(PRODUCTIVE_API_TOKEN && PRODUCTIVE_ORGANIZATION_ID && PRODUCTIVE_PROJECT_ID && PRODUCTIVE_FOLDER_ID);
 
 const app = express();
 app.use(express.json());
@@ -39,11 +40,33 @@ app.get("/api/productive/status", (req, res) => {
   res.json({ configured: isConfigured });
 });
 
+// Temporary helper: lists folders in the configured project so we can find
+// the right PRODUCTIVE_FOLDER_ID without digging through Productive's UI.
+// Safe to remove once that's set — it only reveals folder names/ids, not
+// the token or anything else sensitive.
+app.get("/api/productive/debug/folders", async (req, res) => {
+  if (!PRODUCTIVE_API_TOKEN || !PRODUCTIVE_ORGANIZATION_ID || !PRODUCTIVE_PROJECT_ID) {
+    return res.status(400).json({ ok: false, error: "PRODUCTIVE_API_TOKEN, PRODUCTIVE_ORGANIZATION_ID, and PRODUCTIVE_PROJECT_ID must all be set first." });
+  }
+  try {
+    const r = await fetch(
+      `https://api.productive.io/api/v2/folders?filter[project_id]=${encodeURIComponent(PRODUCTIVE_PROJECT_ID)}`,
+      { headers: productiveHeaders() }
+    );
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) return res.status(502).json({ ok: false, error: body });
+    const folders = (body.data || []).map((f) => ({ id: f.id, name: f.attributes && f.attributes.name }));
+    res.json({ ok: true, folders });
+  } catch (err) {
+    res.status(502).json({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
+});
+
 app.post("/api/productive/create-tasks", async (req, res) => {
   if (!isConfigured) {
     return res.status(400).json({
       ok: false,
-      error: "Productive isn't configured on the server yet. Set PRODUCTIVE_API_TOKEN, PRODUCTIVE_ORGANIZATION_ID, and PRODUCTIVE_PROJECT_ID in server/.env and restart.",
+      error: "Productive isn't configured on the server yet. Set PRODUCTIVE_API_TOKEN, PRODUCTIVE_ORGANIZATION_ID, PRODUCTIVE_PROJECT_ID, and PRODUCTIVE_FOLDER_ID in server/.env and restart.",
     });
   }
 
@@ -98,7 +121,7 @@ async function findOrCreateTaskList(name) {
     body: JSON.stringify({
       data: {
         type: "task_lists",
-        attributes: { name, project_id: PRODUCTIVE_PROJECT_ID },
+        attributes: { name, project_id: PRODUCTIVE_PROJECT_ID, folder_id: PRODUCTIVE_FOLDER_ID },
       },
     }),
   });
