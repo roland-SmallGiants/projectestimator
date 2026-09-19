@@ -206,6 +206,12 @@ export function wireArchiveRows(wrap, rerender) {
             const data = await res.json().catch(() => ({}));
             if (res.ok && data.ok) {
               await db.collection("quotes").doc(id).update({ productiveSyncedAt: nowTimestamp() }).catch(() => {});
+            } else if (data.results) {
+              const failed = data.results.filter((r) => !r.ok);
+              const summary = failed.length
+                ? failed.map((r) => `${r.task}: ${r.error}`).join("\n")
+                : "No tasks were created.";
+              alert(`Sending to Productive failed for ${failed.length} of ${data.results.length} task(s):\n\n${summary}`);
             } else {
               alert("Sending to Productive failed: " + (data.error || `HTTP ${res.status}`));
             }
