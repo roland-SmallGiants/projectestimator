@@ -169,6 +169,11 @@ export function buildArchiveRowHtml(id) {
           <button class="btn ghost small archive-load-estimator">Edit</button>
           <button class="btn ghost small archive-delete" style="color:var(--rose);">Delete</button>
         </div>` : ""}
+        ${isOpen && q.status === "won" ? (
+          q.productiveSyncedAt
+            ? `<span class="sub">Sent to Productive on ${formatDateTime(q.productiveSyncedAt)}</span>`
+            : `<button class="btn ghost small send-to-productive">Send to Productive</button>`
+        ) : ""}
       </div>
     </div>
     <div class="archive-detail ${isOpen ? "open" : ""}">
@@ -182,6 +187,36 @@ export function buildArchiveRowHtml(id) {
 }
 
 export function wireArchiveRows(wrap, rerender) {
+  wrap.querySelectorAll(".send-to-productive").forEach((btn) => {
+    btn.onclick = () => {
+      const id = btn.closest(".archive-row").dataset.id;
+      const q = state.quotes[id];
+      if (!q) return;
+      openConfirm(
+        "Send this quote's tasks to Productive?",
+        `This creates ${q.items.filter((it) => it.role && (Number(it.hours) || 0) > 0).length} task(s) in Productive, one per line item, for "${esc(q.clientName)}". This can't be undone from here \u2014 duplicate tasks would need to be removed in Productive directly.`,
+        async () => {
+          const items = q.items.filter((it) => it.role && (Number(it.hours) || 0) > 0);
+          try {
+            const res = await fetch("/api/productive/create-tasks", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ quoteId: id, clientName: q.clientName, items }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok) {
+              await db.collection("quotes").doc(id).update({ productiveSyncedAt: nowTimestamp() }).catch(() => {});
+            } else {
+              alert("Sending to Productive failed: " + (data.error || `HTTP ${res.status}`));
+            }
+          } catch (err) {
+            alert("Couldn't reach the Productive bridge service: " + err.message);
+          }
+        },
+        "Send"
+      );
+    };
+  });
   wrap.querySelectorAll(".archive-collapse-toggle").forEach((el) => {
     el.onclick = () => {
       const rowId = el.closest(".archive-row").dataset.id;

@@ -4,3 +4,14 @@ services:
     ports:
       - "8086:80"
     restart: unless-stopped
+    depends_on:
+      - productive-bridge
+
+  productive-bridge:
+    build: ./server
+    # Not published to the host on purpose — only the estimator container
+    # (via nginx's /api/ proxy) can reach it. Your Productive token never
+    # needs to be exposed on a host port at all.
+    env_file:
+      - ./server/.env
+    restart: unless-stopped

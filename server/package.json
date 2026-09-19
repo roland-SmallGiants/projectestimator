@@ -1,0 +1,14 @@
+{
+  "name": "estimator-productive-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small backend that holds the Productive.io API token server-side and creates tasks when a quote is approved as Won. Never expose this token to the frontend.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
