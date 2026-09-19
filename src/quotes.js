@@ -206,7 +206,7 @@ export function wireArchiveRows(wrap, rerender) {
             const res = await fetch("/api/productive/create-tasks", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ quoteId: id, clientName: q.clientName, items }),
+              body: JSON.stringify({ quoteId: id, clientName: q.clientName, projectDescription: q.projectDescription, items }),
             });
             const data = await res.json().catch(() => ({}));
             if (res.ok && data.ok) {
