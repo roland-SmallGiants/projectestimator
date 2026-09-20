@@ -225,8 +225,9 @@ function renderQuotesView() {
   const winRate = decidedCount ? Math.round((wonIds.length / decidedCount) * 100) : null;
 
   const archiveTableHeader = `<thead><tr>
-    <th class="archive-th" style="width:24%">Client</th>
-    <th class="archive-th" style="width:26%">Saved</th>
+    <th class="archive-th" style="width:20%">Client</th>
+    <th class="archive-th" style="width:18%">Saved</th>
+    <th class="archive-th" style="width:14%">Publisher</th>
     <th class="archive-th">Description</th>
     <th class="archive-th archive-actions-col" style="width:170px"></th>
   </tr></thead>`;

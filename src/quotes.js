@@ -161,7 +161,8 @@ export function buildArchiveRowHtml(id) {
         <span class="archive-name">${esc(q.clientName)}</span>
       </div>
     </td>
-    <td class="archive-value">${dateStr}${q.createdBy ? ` <span class="archive-by">by ${esc(q.createdBy)}</span>` : ""}</td>
+    <td class="archive-value">${dateStr}</td>
+    <td class="archive-value">${q.createdBy ? esc(q.createdBy) : "\u2014"}</td>
     <td class="archive-value">${esc(q.projectDescription || "") || "\u2014"}</td>
     <td class="archive-actions-col">
       ${(!isOpen || q.status === "won" || q.status === "lost") ? outcomeChips : ""}
@@ -178,7 +179,7 @@ export function buildArchiveRowHtml(id) {
   </tr>`;
 
   const detailRow = isOpen ? `<tr class="archive-detail-row ${openClass}">
-    <td colspan="4">
+    <td colspan="5">
       ${buildEditTimelineHtml(q, id)}
       <table class="summary-style-table">
         <thead><tr><th>Category</th><th style="width:140px">Role</th><th class="numc" style="width:110px">Est. Hours</th><th class="num" style="width:120px">Est. Cost (\u20ac)</th></tr></thead>
