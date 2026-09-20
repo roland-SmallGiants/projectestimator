@@ -137,6 +137,59 @@ app.post("/api/productive/debug/tag-test", async (req, res) => {
   }
 });
 
+// Temporary helper: creates one parent task, then tries several different
+// ways of linking a subtask to it (string id vs number id, attribute vs
+// relationship, a couple of plausible field names) so we can see which one
+// Productive actually accepts, in a single deploy instead of many.
+app.post("/api/productive/debug/parent-task-test", async (req, res) => {
+  if (!isConfigured) return res.status(400).json({ ok: false, error: "Not configured yet." });
+  try {
+    const taskListId = await findOrCreateTaskList("Parent task test (safe to delete)");
+    const parentRes = await fetch("https://api.productive.io/api/v2/tasks", {
+      method: "POST",
+      headers: productiveHeaders(),
+      body: JSON.stringify({
+        data: {
+          type: "tasks",
+          attributes: { title: "Parent task test", project_id: PRODUCTIVE_PROJECT_ID, private: true },
+          relationships: { task_list: { data: { type: "task_lists", id: taskListId } } },
+        },
+      }),
+    });
+    const parentBody = await parentRes.json().catch(() => ({}));
+    if (!parentRes.ok) return res.status(502).json({ ok: false, step: "create parent", error: parentBody });
+    const parentId = parentBody.data.id;
+
+    const attempts = [
+      { label: "parent_task_id as string attribute", body: { attributes: { title: "Attempt: parent_task_id string", project_id: PRODUCTIVE_PROJECT_ID, parent_task_id: parentId } } },
+      { label: "parent_task_id as number attribute", body: { attributes: { title: "Attempt: parent_task_id number", project_id: PRODUCTIVE_PROJECT_ID, parent_task_id: Number(parentId) } } },
+      { label: "relationships.parent_task with number id", body: { attributes: { title: "Attempt: relationship number", project_id: PRODUCTIVE_PROJECT_ID }, relationships: { parent_task: { data: { type: "tasks", id: Number(parentId) } } } } },
+      { label: "relationships.parent (no _task) with string id", body: { attributes: { title: "Attempt: relationship parent", project_id: PRODUCTIVE_PROJECT_ID }, relationships: { parent: { data: { type: "tasks", id: parentId } } } } },
+    ];
+
+    const attemptResults = [];
+    for (const attempt of attempts) {
+      const r = await fetch("https://api.productive.io/api/v2/tasks", {
+        method: "POST",
+        headers: productiveHeaders(),
+        body: JSON.stringify({
+          data: {
+            type: "tasks",
+            ...attempt.body,
+            relationships: { ...(attempt.body.relationships || {}), task_list: { data: { type: "task_lists", id: taskListId } } },
+          },
+        }),
+      });
+      const body = await r.json().catch(() => ({}));
+      attemptResults.push({ label: attempt.label, ok: r.ok, result: r.ok ? { id: body.data.id } : body });
+    }
+
+    res.json({ ok: true, parentId, attempts: attemptResults });
+  } catch (err) {
+    res.status(502).json({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
+});
+
 app.post("/api/productive/create-tasks", async (req, res) => {
   if (!isConfigured) {
     return res.status(400).json({
