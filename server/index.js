@@ -92,7 +92,7 @@ app.post("/api/productive/debug/create-folder", async (req, res) => {
 // took effect) instead of guessing from the UI.
 app.get("/api/productive/debug/task/:id", async (req, res) => {
   try {
-    const r = await fetch(`https://api.productive.io/api/v2/tasks/${encodeURIComponent(req.params.id)}`, {
+    const r = await fetch(`https://api.productive.io/api/v2/tasks/${encodeURIComponent(req.params.id)}?include=parent_task`, {
       headers: productiveHeaders(),
     });
     const body = await r.json().catch(() => ({}));
@@ -181,7 +181,16 @@ app.post("/api/productive/debug/parent-task-test", async (req, res) => {
         }),
       });
       const body = await r.json().catch(() => ({}));
-      attemptResults.push({ label: attempt.label, ok: r.ok, result: r.ok ? { id: body.data.id } : body });
+      let readBack = null;
+      if (r.ok) {
+        const verifyRes = await fetch(`https://api.productive.io/api/v2/tasks/${body.data.id}?include=parent_task`, { headers: productiveHeaders() });
+        const verifyBody = await verifyRes.json().catch(() => ({}));
+        readBack = {
+          parentTaskRelationship: verifyBody.data && verifyBody.data.relationships && verifyBody.data.relationships.parent_task,
+          included: verifyBody.included || [],
+        };
+      }
+      attemptResults.push({ label: attempt.label, ok: r.ok, result: r.ok ? { id: body.data.id } : body, readBack });
     }
 
     res.json({ ok: true, parentId, attempts: attemptResults });
