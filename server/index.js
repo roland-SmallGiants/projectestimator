@@ -165,6 +165,8 @@ app.post("/api/productive/debug/parent-task-test", async (req, res) => {
       { label: "parent_task_id as number attribute", body: { attributes: { title: "Attempt: parent_task_id number", project_id: PRODUCTIVE_PROJECT_ID, parent_task_id: Number(parentId) } } },
       { label: "relationships.parent_task with number id", body: { attributes: { title: "Attempt: relationship number", project_id: PRODUCTIVE_PROJECT_ID }, relationships: { parent_task: { data: { type: "tasks", id: Number(parentId) } } } } },
       { label: "relationships.parent (no _task) with string id", body: { attributes: { title: "Attempt: relationship parent", project_id: PRODUCTIVE_PROJECT_ID }, relationships: { parent: { data: { type: "tasks", id: parentId } } } } },
+      { label: "relationships.parent_task with STRING id (original)", body: { attributes: { title: "Attempt: relationship parent_task string", project_id: PRODUCTIVE_PROJECT_ID }, relationships: { parent_task: { data: { type: "tasks", id: parentId } } } } },
+      { label: "relationships.parent_task, type 'task' singular, string id", body: { attributes: { title: "Attempt: singular type", project_id: PRODUCTIVE_PROJECT_ID }, relationships: { parent_task: { data: { type: "task", id: parentId } } } } },
     ];
 
     const attemptResults = [];
@@ -193,7 +195,24 @@ app.post("/api/productive/debug/parent-task-test", async (req, res) => {
       attemptResults.push({ label: attempt.label, ok: r.ok, result: r.ok ? { id: body.data.id } : body, readBack });
     }
 
-    res.json({ ok: true, parentId, attempts: attemptResults });
+    // Also try a dedicated nested endpoint, in case Productive expects
+    // subtasks to be created there rather than via a field on /tasks.
+    let dedicatedEndpointResult;
+    try {
+      const dedicatedRes = await fetch(`https://api.productive.io/api/v2/tasks/${parentId}/subtasks`, {
+        method: "POST",
+        headers: productiveHeaders(),
+        body: JSON.stringify({
+          data: { type: "tasks", attributes: { title: "Attempt: dedicated subtask endpoint", project_id: PRODUCTIVE_PROJECT_ID } },
+        }),
+      });
+      const dedicatedBody = await dedicatedRes.json().catch(() => ({}));
+      dedicatedEndpointResult = { httpStatus: dedicatedRes.status, ok: dedicatedRes.ok, body: dedicatedBody };
+    } catch (err) {
+      dedicatedEndpointResult = { error: String(err && err.message ? err.message : err) };
+    }
+
+    res.json({ ok: true, parentId, attempts: attemptResults, dedicatedEndpointResult });
   } catch (err) {
     res.status(502).json({ ok: false, error: String(err && err.message ? err.message : err) });
   }
