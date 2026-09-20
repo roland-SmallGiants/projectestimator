@@ -400,7 +400,13 @@ async function createTaskInProductive(item, context) {
           task_list_id: Number(context.taskListId),
           tag_list: tagList,
           ...(context.workflowStatusId ? { workflow_status_id: Number(context.workflowStatusId) } : {}),
-          ...(context.parentTaskId ? { parent_task_id: Number(context.parentTaskId) } : { private: true }),
+          ...(context.parentTaskId ? { parent_task_id: Number(context.parentTaskId) } : {}),
+          // Note: NOT setting private:true here even for the parent (discipline)
+          // task. Productive doesn't allow a private task to have subtasks at
+          // all, and it also doesn't allow subtasks themselves to be private —
+          // so with this parent/subtask structure, privacy genuinely can't be
+          // applied anywhere in the hierarchy. Confirmed directly against the
+          // API before making this change.
         },
       },
     }),
