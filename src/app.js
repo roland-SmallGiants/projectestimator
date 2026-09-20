@@ -231,23 +231,16 @@ function renderQuotesView() {
     <th class="archive-th archive-actions-col" style="width:170px"></th>
   </tr></thead>`;
 
-  const pendingSection = `<section class="card">
-    <h2 style="font-size:15px;">Pending</h2>
-    <div class="sub">${pendingIds.length} quote${pendingIds.length === 1 ? "" : "s"}</div>
-    ${pendingIds.length ? `<table class="archive-table" style="margin-top:10px;">
-      ${archiveTableHeader}
-      <tbody>${pendingIds.map((id) => buildArchiveRowHtml(id)).join("")}</tbody>
-    </table>` : `<div class="task-empty" style="margin-top:14px;">No quotes here yet.</div>`}
-  </section>`;
+  const activeTab = ["pending", "won", "lost"].includes(state.quoteListActiveTab) ? state.quoteListActiveTab : "pending";
+  const activeIds = activeTab === "pending" ? pendingIds : activeTab === "won" ? wonIds : lostIds;
 
-  const activeTab = state.wonLostActiveTab === "lost" ? "lost" : "won";
-  const activeIds = activeTab === "won" ? wonIds : lostIds;
-  const wonLostSection = `<section class="card">
-    <h2 style="font-size:15px;">Won / Lost</h2>
+  const quotesSection = `<section class="card">
+    <h2 style="font-size:15px;">Quotes</h2>
     <div class="sub">
-      ${wonIds.length} won (${money(wonTotal)}) \u00b7 ${lostIds.length} lost (${money(lostTotal)})${winRate !== null ? ` \u00b7 ${winRate}% win rate` : ""}
+      ${pendingIds.length} pending \u00b7 ${wonIds.length} won (${money(wonTotal)}) \u00b7 ${lostIds.length} lost (${money(lostTotal)})${winRate !== null ? ` \u00b7 ${winRate}% win rate` : ""}
     </div>
-    <table class="cell-toggle" id="wonLostTabToggle" style="margin-top:14px;"><tr>
+    <table class="cell-toggle" id="quoteListTabToggle" style="margin-top:14px;"><tr>
+      <td class="${activeTab === "pending" ? "active" : ""}" data-tab="pending">Pending</td>
       <td class="${activeTab === "won" ? "active" : ""}" data-tab="won">Won</td>
       <td class="${activeTab === "lost" ? "active" : ""}" data-tab="lost">Lost</td>
     </tr></table>
@@ -257,11 +250,11 @@ function renderQuotesView() {
     </table>` : `<div class="task-empty" style="margin-top:14px;">No ${activeTab} quotes here yet.</div>`}
   </section>`;
 
-  wrap.innerHTML = pendingSection + wonLostSection;
+  wrap.innerHTML = quotesSection;
   wireArchiveRows(wrap, renderQuotesView);
-  document.querySelectorAll("#wonLostTabToggle td").forEach((cell) => {
+  document.querySelectorAll("#quoteListTabToggle td").forEach((cell) => {
     cell.onclick = () => {
-      state.wonLostActiveTab = cell.dataset.tab;
+      state.quoteListActiveTab = cell.dataset.tab;
       renderQuotesView();
     };
   });
