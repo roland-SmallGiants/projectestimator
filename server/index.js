@@ -151,14 +151,20 @@ app.post("/api/productive/debug/parent-task-test", async (req, res) => {
   if (!isConfigured) return res.status(400).json({ ok: false, error: "Not configured yet." });
   try {
     const taskListId = await findOrCreateTaskList("Parent task test (safe to delete)");
+    const workflowStatusId = await findWorkflowStatusIdByName("Ready for planning").catch(() => null);
     const parentRes = await fetch("https://api.productive.io/api/v2/tasks", {
       method: "POST",
       headers: productiveHeaders(),
       body: JSON.stringify({
         data: {
           type: "tasks",
-          attributes: { title: "Parent task test", project_id: PRODUCTIVE_PROJECT_ID, private: true },
-          relationships: { task_list: { data: { type: "task_lists", id: taskListId } } },
+          attributes: {
+            title: "Parent task test",
+            project_id: Number(PRODUCTIVE_PROJECT_ID),
+            task_list_id: Number(taskListId),
+            ...(workflowStatusId ? { workflow_status_id: Number(workflowStatusId) } : {}),
+            private: true,
+          },
         },
       }),
     });
@@ -166,13 +172,25 @@ app.post("/api/productive/debug/parent-task-test", async (req, res) => {
     if (!parentRes.ok) return res.status(502).json({ ok: false, step: "create parent", error: parentBody });
     const parentId = parentBody.data.id;
 
+    // Note: NO outer wrapping this time — each attempt's body is sent exactly
+    // as written, so we can genuinely isolate which combination of fields works.
     const attempts = [
-      { label: "parent_task_id as string attribute", body: { attributes: { title: "Attempt: parent_task_id string", project_id: PRODUCTIVE_PROJECT_ID, parent_task_id: parentId } } },
-      { label: "parent_task_id as number attribute", body: { attributes: { title: "Attempt: parent_task_id number", project_id: PRODUCTIVE_PROJECT_ID, parent_task_id: Number(parentId) } } },
-      { label: "relationships.parent_task with number id", body: { attributes: { title: "Attempt: relationship number", project_id: PRODUCTIVE_PROJECT_ID }, relationships: { parent_task: { data: { type: "tasks", id: Number(parentId) } } } } },
-      { label: "relationships.parent (no _task) with string id", body: { attributes: { title: "Attempt: relationship parent", project_id: PRODUCTIVE_PROJECT_ID }, relationships: { parent: { data: { type: "tasks", id: parentId } } } } },
-      { label: "relationships.parent_task with STRING id (original)", body: { attributes: { title: "Attempt: relationship parent_task string", project_id: PRODUCTIVE_PROJECT_ID }, relationships: { parent_task: { data: { type: "tasks", id: parentId } } } } },
-      { label: "relationships.parent_task, type 'task' singular, string id", body: { attributes: { title: "Attempt: singular type", project_id: PRODUCTIVE_PROJECT_ID }, relationships: { parent_task: { data: { type: "task", id: parentId } } } } },
+      {
+        label: "full documented format (title, project_id, task_list_id, workflow_status_id, parent_task_id)",
+        attributes: { title: "Attempt: full format", project_id: Number(PRODUCTIVE_PROJECT_ID), task_list_id: Number(taskListId), ...(workflowStatusId ? { workflow_status_id: Number(workflowStatusId) } : {}), parent_task_id: Number(parentId) },
+      },
+      {
+        label: "without task_list_id (let it inherit from parent)",
+        attributes: { title: "Attempt: no task_list_id", project_id: Number(PRODUCTIVE_PROJECT_ID), ...(workflowStatusId ? { workflow_status_id: Number(workflowStatusId) } : {}), parent_task_id: Number(parentId) },
+      },
+      {
+        label: "without workflow_status_id",
+        attributes: { title: "Attempt: no workflow_status_id", project_id: Number(PRODUCTIVE_PROJECT_ID), task_list_id: Number(taskListId), parent_task_id: Number(parentId) },
+      },
+      {
+        label: "minimal: only title, project_id, parent_task_id",
+        attributes: { title: "Attempt: minimal", project_id: Number(PRODUCTIVE_PROJECT_ID), parent_task_id: Number(parentId) },
+      },
     ];
 
     const attemptResults = [];
@@ -180,13 +198,7 @@ app.post("/api/productive/debug/parent-task-test", async (req, res) => {
       const r = await fetch("https://api.productive.io/api/v2/tasks", {
         method: "POST",
         headers: productiveHeaders(),
-        body: JSON.stringify({
-          data: {
-            type: "tasks",
-            ...attempt.body,
-            relationships: { ...(attempt.body.relationships || {}), task_list: { data: { type: "task_lists", id: taskListId } } },
-          },
-        }),
+        body: JSON.stringify({ data: { type: "tasks", attributes: attempt.attributes } }),
       });
       const body = await r.json().catch(() => ({}));
       let readBack = null;
