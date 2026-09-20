@@ -450,6 +450,16 @@ export function renderPricingCard() {
     const v = (Number(input.value) || 0) / 100;
     db.doc("settings/main").update({ contingencyPct: v }).catch(() => {});
   };
+
+  const staleInput = document.getElementById("staleThresholdInput");
+  if (staleInput) {
+    if (document.activeElement !== staleInput) staleInput.value = state.settings.staleQuoteThresholdWeeks ?? 2;
+    staleInput.onchange = () => {
+      const v = Math.max(1, Number(staleInput.value) || 2);
+      db.doc("settings/main").update({ staleQuoteThresholdWeeks: v }).catch(() => {});
+    };
+    wireNumberStepper(staleInput, { fullWidth: true });
+  }
 }
 
 // ---- Team ----

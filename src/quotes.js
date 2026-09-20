@@ -153,12 +153,21 @@ export function buildArchiveRowHtml(id) {
     ${statusDateStr ? `<span class="sub">on ${statusDateStr}</span>` : ""}
   </span>`;
 
+  const isPending = q.status !== "won" && q.status !== "lost";
+  const thresholdWeeks = Math.max(1, Number(state.settings?.staleQuoteThresholdWeeks) || 2);
+  const savedDate = new Date(q.savedAt);
+  const weeksPending = isPending && !isNaN(savedDate) ? Math.floor((Date.now() - savedDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) : 0;
+  const staleBadge = isPending && weeksPending >= thresholdWeeks
+    ? `<span class="archive-stale-badge" title="Pending ${weeksPending} week${weeksPending === 1 ? "" : "s"}">${weeksPending}w</span>`
+    : "";
+
   const openClass = isOpen ? "archive-row-open" : "";
   const mainRow = `<tr class="archive-row ${openClass}" data-id="${id}">
     <td>
       <div class="archive-name-cell archive-collapse-toggle" style="cursor:pointer;">
         <span class="archive-chevron">${isOpen ? "\u25be" : "\u25b8"}</span>
         <span class="archive-name">${esc(q.clientName)}</span>
+        ${staleBadge}
       </div>
     </td>
     <td class="archive-value">${dateStr}</td>

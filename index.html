@@ -243,6 +243,10 @@
       <div style="display:flex; align-items:center; gap:8px; margin-top:10px;">
         <input type="number" id="contingencyInput" min="0" step="1" style="max-width:100px; text-align:center;"><span class="sub">%</span>
       </div>
+      <div class="sub" style="margin-top:20px;">A pending quote gets flagged once it's been sitting this long without a decision.</div>
+      <div style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+        <input type="number" id="staleThresholdInput" min="1" step="1" style="max-width:100px; text-align:center;"><span class="sub">weeks</span>
+      </div>
     </section>
 
     <section class="card">
