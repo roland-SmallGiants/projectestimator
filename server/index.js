@@ -102,6 +102,41 @@ app.get("/api/productive/debug/task/:id", async (req, res) => {
   }
 });
 
+// Temporary helper: creates a NON-private test task with a test tag_list,
+// then immediately reads it back. Isolates whether tag_list works at all
+// from the separate issue of private tasks being unreadable via this token.
+app.post("/api/productive/debug/tag-test", async (req, res) => {
+  if (!isConfigured) return res.status(400).json({ ok: false, error: "Not configured yet." });
+  try {
+    const taskListId = await findOrCreateTaskList("Tag test (safe to delete)");
+    const createRes = await fetch("https://api.productive.io/api/v2/tasks", {
+      method: "POST",
+      headers: productiveHeaders(),
+      body: JSON.stringify({
+        data: {
+          type: "tasks",
+          attributes: {
+            title: "Tag test task",
+            project_id: PRODUCTIVE_PROJECT_ID,
+            tag_list: "test-client, test-discipline, test-role",
+            private: false,
+          },
+          relationships: { task_list: { data: { type: "task_lists", id: taskListId } } },
+        },
+      }),
+    });
+    const createBody = await createRes.json().catch(() => ({}));
+    if (!createRes.ok) return res.status(502).json({ ok: false, step: "create", error: createBody });
+
+    const taskId = createBody.data.id;
+    const readRes = await fetch(`https://api.productive.io/api/v2/tasks/${taskId}`, { headers: productiveHeaders() });
+    const readBody = await readRes.json().catch(() => ({}));
+    res.json({ ok: true, taskId, createdAttributes: createBody.data.attributes, readBackAttributes: readBody.data && readBody.data.attributes });
+  } catch (err) {
+    res.status(502).json({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
+});
+
 app.post("/api/productive/create-tasks", async (req, res) => {
   if (!isConfigured) {
     return res.status(400).json({
