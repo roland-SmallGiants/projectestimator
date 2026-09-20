@@ -267,7 +267,7 @@ async function createTaskInProductive(item, context) {
     body: JSON.stringify({
       data: {
         type: "tasks",
-        attributes: { title, description, initial_estimate: initialEstimate, project_id: PRODUCTIVE_PROJECT_ID, tag_list: tagList, ...(context.parentTaskId ? {} : { private: true }) },
+        attributes: { title, description, initial_estimate: initialEstimate, project_id: PRODUCTIVE_PROJECT_ID, tag_list: tagList, ...(context.parentTaskId ? { parent_task_id: context.parentTaskId } : { private: true }) },
         relationships: {
           task_list: {
             data: { type: "task_lists", id: context.taskListId },
@@ -275,11 +275,6 @@ async function createTaskInProductive(item, context) {
           ...(context.workflowStatusId ? {
             workflow_status: {
               data: { type: "workflow_statuses", id: context.workflowStatusId },
-            },
-          } : {}),
-          ...(context.parentTaskId ? {
-            parent_task: {
-              data: { type: "tasks", id: context.parentTaskId },
             },
           } : {}),
         },
