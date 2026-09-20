@@ -147,10 +147,10 @@ export function buildArchiveRowHtml(id) {
   const statusDateStr = (q.status === "won" || q.status === "lost") && q.statusChangedAt ? formatDateTime(q.statusChangedAt) : "";
   const outcomeChips = `<span style="display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;">
     <span class="archive-chips">
-      <button type="button" class="archive-chip status-won ${q.status === "won" ? "on" : ""}" data-status="won">Won</button>
-      <button type="button" class="archive-chip status-lost ${q.status === "lost" ? "on" : ""}" data-status="lost">Lost</button>
+      ${q.status !== "lost" ? `<button type="button" class="archive-chip status-won ${q.status === "won" ? "on" : ""}" data-status="won">Won</button>` : ""}
+      ${q.status !== "won" ? `<button type="button" class="archive-chip status-lost ${q.status === "lost" ? "on" : ""}" data-status="lost">Lost</button>` : ""}
     </span>
-    ${statusDateStr ? `<span class="sub">${q.status === "won" ? "Won" : "Lost"} on ${statusDateStr}</span>` : ""}
+    ${statusDateStr ? `<span class="sub">on ${statusDateStr}</span>` : ""}
   </span>`;
 
   const openClass = isOpen ? "archive-row-open" : "";
