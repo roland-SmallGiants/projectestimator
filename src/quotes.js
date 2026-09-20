@@ -1,6 +1,6 @@
 import { db, nowTimestamp } from "./firebase-init.js";
 import { state } from "./state.js";
-import { esc, money, moneyPlain, formatDateTime, notesIcon } from "./utils.js";
+import { esc, money, moneyPlain, formatDateTime, formatDate, notesIcon } from "./utils.js";
 import { openConfirm } from "./modals.js";
 import { buildQuoteSnapshot } from "./estimator.js";
 import { releaseLock, createDraft, tryLockDraft, startHeartbeat, seedDraftItemsForDiscipline } from "./drafts.js";
@@ -144,7 +144,7 @@ export function buildArchiveRowHtml(id) {
     return catRow + taskRows;
   }).join("");
 
-  const statusDateStr = (q.status === "won" || q.status === "lost") && q.statusChangedAt ? formatDateTime(q.statusChangedAt) : "";
+  const statusDateStr = (q.status === "won" || q.status === "lost") && q.statusChangedAt ? formatDate(q.statusChangedAt) : "";
   const outcomeChips = `<span style="display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;">
     <span class="archive-chips">
       ${q.status !== "lost" ? `<button type="button" class="archive-chip status-won ${q.status === "won" ? "on" : ""}" data-status="won">Won</button>` : ""}
