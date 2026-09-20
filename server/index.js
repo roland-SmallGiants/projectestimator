@@ -159,7 +159,7 @@ app.post("/api/productive/debug/parent-task-test", async (req, res) => {
         data: {
           type: "tasks",
           attributes: {
-            title: "Parent task test",
+            title: "Parent task test (private)",
             project_id: Number(PRODUCTIVE_PROJECT_ID),
             task_list_id: Number(taskListId),
             ...(workflowStatusId ? { workflow_status_id: Number(workflowStatusId) } : {}),
@@ -170,6 +170,25 @@ app.post("/api/productive/debug/parent-task-test", async (req, res) => {
     });
     const parentBody = await parentRes.json().catch(() => ({}));
     if (!parentRes.ok) return res.status(502).json({ ok: false, step: "create parent", error: parentBody });
+
+    const nonPrivateParentRes = await fetch("https://api.productive.io/api/v2/tasks", {
+      method: "POST",
+      headers: productiveHeaders(),
+      body: JSON.stringify({
+        data: {
+          type: "tasks",
+          attributes: {
+            title: "Parent task test (NOT private)",
+            project_id: Number(PRODUCTIVE_PROJECT_ID),
+            task_list_id: Number(taskListId),
+            ...(workflowStatusId ? { workflow_status_id: Number(workflowStatusId) } : {}),
+          },
+        },
+      }),
+    });
+    const nonPrivateParentBody = await nonPrivateParentRes.json().catch(() => ({}));
+    if (!nonPrivateParentRes.ok) return res.status(502).json({ ok: false, step: "create non-private parent", error: nonPrivateParentBody });
+    const nonPrivateParentId = nonPrivateParentBody.data.id;
     const parentId = parentBody.data.id;
 
     // Note: NO outer wrapping this time — each attempt's body is sent exactly
@@ -190,6 +209,10 @@ app.post("/api/productive/debug/parent-task-test", async (req, res) => {
       {
         label: "minimal: only title, project_id, parent_task_id",
         attributes: { title: "Attempt: minimal", project_id: Number(PRODUCTIVE_PROJECT_ID), parent_task_id: Number(parentId) },
+      },
+      {
+        label: "using a NON-PRIVATE parent this time",
+        attributes: { title: "Attempt: non-private parent", project_id: Number(PRODUCTIVE_PROJECT_ID), task_list_id: Number(taskListId), parent_task_id: Number(nonPrivateParentId) },
       },
     ];
 
