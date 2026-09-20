@@ -267,7 +267,7 @@ async function createTaskInProductive(item, context) {
     body: JSON.stringify({
       data: {
         type: "tasks",
-        attributes: { title, description, initial_estimate: initialEstimate, project_id: PRODUCTIVE_PROJECT_ID, tag_list: tagList, private: true },
+        attributes: { title, description, initial_estimate: initialEstimate, project_id: PRODUCTIVE_PROJECT_ID, tag_list: tagList, ...(context.parentTaskId ? {} : { private: true }) },
         relationships: {
           task_list: {
             data: { type: "task_lists", id: context.taskListId },
