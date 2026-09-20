@@ -40,6 +40,12 @@ app.get("/api/productive/status", (req, res) => {
   res.json({ configured: isConfigured });
 });
 
+// Temporary helper: proves definitively which code version is actually
+// running, so we stop guessing whether a deploy really happened.
+app.get("/api/productive/debug/version", (req, res) => {
+  res.json({ version: "documented-format-fix-2026-09-20-parent-task-id-as-attribute" });
+});
+
 // Temporary helper: lists folders in the configured project so we can find
 // the right PRODUCTIVE_FOLDER_ID without digging through Productive's UI.
 // Safe to remove once that's set — it only reveals folder names/ids, not
