@@ -342,27 +342,24 @@ async function createTaskInProductive(item, context) {
   const initialEstimate = Math.round((Number(item.hours) || 0) * 60); // Productive tracks estimates in minutes
   const tagList = [context.clientName, item.category, item.role].filter(Boolean);
 
+  // Per Productive's docs, every foreign-key-style field (project, task list,
+  // workflow status, parent task) is a plain "_id" attribute, NOT a JSON:API
+  // relationship, despite the general JSON:API convention suggesting otherwise.
   const res = await fetch("https://api.productive.io/api/v2/tasks", {
     method: "POST",
     headers: productiveHeaders(),
     body: JSON.stringify({
       data: {
         type: "tasks",
-        attributes: { title, description, initial_estimate: initialEstimate, project_id: PRODUCTIVE_PROJECT_ID, tag_list: tagList, ...(context.parentTaskId ? {} : { private: true }) },
-        relationships: {
-          task_list: {
-            data: { type: "task_lists", id: context.taskListId },
-          },
-          ...(context.workflowStatusId ? {
-            workflow_status: {
-              data: { type: "workflow_statuses", id: context.workflowStatusId },
-            },
-          } : {}),
-          ...(context.parentTaskId ? {
-            parent: {
-              data: { type: "tasks", id: context.parentTaskId },
-            },
-          } : {}),
+        attributes: {
+          title,
+          description,
+          initial_estimate: initialEstimate,
+          project_id: Number(PRODUCTIVE_PROJECT_ID),
+          task_list_id: Number(context.taskListId),
+          tag_list: tagList,
+          ...(context.workflowStatusId ? { workflow_status_id: Number(context.workflowStatusId) } : {}),
+          ...(context.parentTaskId ? { parent_task_id: Number(context.parentTaskId) } : { private: true }),
         },
       },
     }),
