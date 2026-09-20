@@ -118,7 +118,7 @@ app.post("/api/productive/debug/tag-test", async (req, res) => {
           attributes: {
             title: "Tag test task",
             project_id: PRODUCTIVE_PROJECT_ID,
-            tag_list: "test-client, test-discipline, test-role",
+            tag_list: ["test-client", "test-discipline", "test-role"],
             private: false,
           },
           relationships: { task_list: { data: { type: "task_lists", id: taskListId } } },
@@ -259,7 +259,7 @@ async function createTaskInProductive(item, context) {
   const title = item.task;
   const description = item.notes || "";
   const initialEstimate = Math.round((Number(item.hours) || 0) * 60); // Productive tracks estimates in minutes
-  const tagList = [context.clientName, item.category, item.role].filter(Boolean).join(", ");
+  const tagList = [context.clientName, item.category, item.role].filter(Boolean);
 
   const res = await fetch("https://api.productive.io/api/v2/tasks", {
     method: "POST",
