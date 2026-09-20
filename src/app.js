@@ -224,12 +224,20 @@ function renderQuotesView() {
   const decidedCount = wonIds.length + lostIds.length;
   const winRate = decidedCount ? Math.round((wonIds.length / decidedCount) * 100) : null;
 
+  const archiveTableHeader = `<thead><tr>
+    <th class="archive-th" style="width:24%">Client</th>
+    <th class="archive-th" style="width:26%">Saved</th>
+    <th class="archive-th">Description</th>
+    <th class="archive-th archive-actions-col" style="width:170px"></th>
+  </tr></thead>`;
+
   const pendingSection = `<section class="card">
     <h2 style="font-size:15px;">Pending</h2>
     <div class="sub">${pendingIds.length} quote${pendingIds.length === 1 ? "" : "s"}</div>
-    <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
-      ${pendingIds.length ? pendingIds.map((id) => buildArchiveRowHtml(id)).join("") : `<div class="task-empty">No quotes here yet.</div>`}
-    </div>
+    ${pendingIds.length ? `<table class="archive-table" style="margin-top:10px;">
+      ${archiveTableHeader}
+      <tbody>${pendingIds.map((id) => buildArchiveRowHtml(id)).join("")}</tbody>
+    </table>` : `<div class="task-empty" style="margin-top:14px;">No quotes here yet.</div>`}
   </section>`;
 
   const activeTab = state.wonLostActiveTab === "lost" ? "lost" : "won";
@@ -243,9 +251,10 @@ function renderQuotesView() {
       <td class="${activeTab === "won" ? "active" : ""}" data-tab="won">Won</td>
       <td class="${activeTab === "lost" ? "active" : ""}" data-tab="lost">Lost</td>
     </tr></table>
-    <div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
-      ${activeIds.length ? activeIds.map((id) => buildArchiveRowHtml(id)).join("") : `<div class="task-empty">No ${activeTab} quotes here yet.</div>`}
-    </div>
+    ${activeIds.length ? `<table class="archive-table" style="margin-top:10px;">
+      ${archiveTableHeader}
+      <tbody>${activeIds.map((id) => buildArchiveRowHtml(id)).join("")}</tbody>
+    </table>` : `<div class="task-empty" style="margin-top:14px;">No ${activeTab} quotes here yet.</div>`}
   </section>`;
 
   wrap.innerHTML = pendingSection + wonLostSection;

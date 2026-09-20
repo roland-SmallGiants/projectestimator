@@ -145,47 +145,49 @@ export function buildArchiveRowHtml(id) {
   }).join("");
 
   const statusDateStr = (q.status === "won" || q.status === "lost") && q.statusChangedAt ? formatDateTime(q.statusChangedAt) : "";
-  const outcomeChips = `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-    <div class="chips small">
-      <button type="button" class="chip status-won ${q.status === "won" ? "on" : ""}" data-status="won">Won</button>
-      <button type="button" class="chip status-lost ${q.status === "lost" ? "on" : ""}" data-status="lost">Lost</button>
-    </div>
+  const outcomeChips = `<span style="display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;">
+    <span class="archive-chips">
+      <button type="button" class="archive-chip status-won ${q.status === "won" ? "on" : ""}" data-status="won">Won</button>
+      <button type="button" class="archive-chip status-lost ${q.status === "lost" ? "on" : ""}" data-status="lost">Lost</button>
+    </span>
     ${statusDateStr ? `<span class="sub">${q.status === "won" ? "Won" : "Lost"} on ${statusDateStr}</span>` : ""}
-  </div>`;
+  </span>`;
 
-  return `<div class="archive-row ${isOpen ? "archive-row-open" : ""}" data-id="${id}">
-    <div class="archive-head">
-      <div class="archive-collapse-toggle" style="cursor:pointer;">
-        <div class="archive-meta-grid">
-          <span class="archive-meta-label">Client</span>
-          <span class="archive-meta-label">Saved</span>
-          <span class="archive-meta-label">Description</span>
-          <span class="name"><span style="display:inline-block; width:14px;">${isOpen ? "\u25be" : "\u25b8"}</span>${esc(q.clientName)}</span>
-          <span class="archive-meta-value">${dateStr}${q.createdBy ? ` by ${esc(q.createdBy)}` : ""}</span>
-          <span class="archive-meta-value archive-meta-value-wrap">${esc(q.projectDescription || "") || "\u2014"}</span>
-        </div>
+  const openClass = isOpen ? "archive-row-open" : "";
+  const mainRow = `<tr class="archive-row ${openClass}" data-id="${id}">
+    <td>
+      <div class="archive-name-cell archive-collapse-toggle" style="cursor:pointer;">
+        <span class="archive-chevron">${isOpen ? "\u25be" : "\u25b8"}</span>
+        <span class="archive-name">${esc(q.clientName)}</span>
       </div>
-      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-        ${(!isOpen || q.status === "won" || q.status === "lost") ? outcomeChips : ""}
-        ${isOpen && q.status !== "won" && q.status !== "lost" ? `<div style="display:flex; gap:10px;">
-          <button class="btn ghost small archive-load-estimator">Edit</button>
-          <button class="btn ghost small archive-delete" style="color:var(--rose);">Delete</button>
-        </div>` : ""}
-        ${isOpen && q.status === "won" ? (
-          q.productiveSyncedAt
-            ? `<span class="sub">Sent to Productive on ${formatDateTime(q.productiveSyncedAt)}</span>`
-            : `<button class="btn ghost small send-to-productive">Send to Productive</button>`
-        ) : ""}
-      </div>
-    </div>
-    <div class="archive-detail ${isOpen ? "open" : ""}">
+    </td>
+    <td class="archive-value">${dateStr}${q.createdBy ? ` <span class="archive-by">by ${esc(q.createdBy)}</span>` : ""}</td>
+    <td class="archive-value">${esc(q.projectDescription || "") || "\u2014"}</td>
+    <td class="archive-actions-col">
+      ${(!isOpen || q.status === "won" || q.status === "lost") ? outcomeChips : ""}
+      ${isOpen && q.status !== "won" && q.status !== "lost" ? `<span style="display:inline-flex; gap:10px;">
+        <button class="btn ghost small archive-load-estimator">Edit</button>
+        <button class="btn ghost small archive-delete" style="color:var(--rose);">Delete</button>
+      </span>` : ""}
+      ${isOpen && q.status === "won" ? (
+        q.productiveSyncedAt
+          ? `<span class="sub">Sent to Productive on ${formatDateTime(q.productiveSyncedAt)}</span>`
+          : `<button class="btn ghost small send-to-productive">Send to Productive</button>`
+      ) : ""}
+    </td>
+  </tr>`;
+
+  const detailRow = isOpen ? `<tr class="archive-detail-row ${openClass}">
+    <td colspan="4">
       ${buildEditTimelineHtml(q, id)}
       <table class="summary-style-table">
         <thead><tr><th>Category</th><th style="width:140px">Role</th><th class="numc" style="width:110px">Est. Hours</th><th class="num" style="width:120px">Est. Cost (\u20ac)</th></tr></thead>
         <tbody>${catRows}<tr class="summary-row final"><td>Final quoted price</td><td></td><td class="numc">${q.grandHours.toLocaleString("nl-NL")}</td><td class="num">${moneyPlain(q.finalPrice)}</td></tr></tbody>
       </table>
-    </div>
-  </div>`;
+    </td>
+  </tr>` : "";
+
+  return mainRow + detailRow;
 }
 
 export function wireArchiveRows(wrap, rerender) {
