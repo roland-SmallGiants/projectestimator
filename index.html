@@ -91,13 +91,13 @@
       </section>
       <section class="card">
         <h2>Scope</h2>
-        <div class="sub">Is the quote for 1 discipline or does it contain multiple?</div>
+        <div class="sub">Is the quote for 1 deliverable or does it contain multiple?</div>
         <div class="chips small" id="disciplineModeChips" style="margin-top:8px;">
-          <button type="button" class="chip" data-mode="single">1 discipline</button>
-          <button type="button" class="chip" data-mode="multiple">Multiple disciplines</button>
+          <button type="button" class="chip" data-mode="single">1 deliverable</button>
+          <button type="button" class="chip" data-mode="multiple">Multiple deliverables</button>
         </div>
         <hr id="disciplineDivider" style="border:none; border-top:1px solid var(--line); margin:16px 0;">
-        <div class="sub" id="disciplineChipsLabel" style="margin-bottom:8px;">Select the disciplines that are included in this quote</div>
+        <div class="sub" id="disciplineChipsLabel" style="margin-bottom:8px;">Select the deliverables that are included in this quote</div>
         <div class="chips" id="disciplineChips"></div>
       </section>
     </div>
@@ -173,7 +173,7 @@
     </section>
     <section class="card">
       <h2 style="font-size:15px;">Default vs. Quoted hours</h2>
-      <div class="sub">Grouped by discipline, ranked by how close actual usage tracked to the default \u2014 smallest deviation first. Only shows tasks that have actually been used in at least one quote. Expand a task to see the breakdown by client.</div>
+      <div class="sub">Grouped by deliverable, ranked by how close actual usage tracked to the default \u2014 smallest deviation first. Only shows tasks that have actually been used in at least one quote. Expand a task to see the breakdown by client.</div>
       <table class="summary-style-table" style="margin-top:12px;">
         <thead><tr>
           <th>Task</th>
@@ -214,7 +214,7 @@
 
   <!-- Admin -->
   <div id="adminView" style="display:none;">
-    <section class="card"><h2>Admin</h2><div class="sub">Rates, disciplines, pricing, and team — separate from day-to-day estimating.</div></section>
+    <section class="card"><h2>Admin</h2><div class="sub">Rates, deliverables, pricing, and team — separate from day-to-day estimating.</div></section>
 
     <section class="card">
       <h2>Rate Card</h2>
@@ -222,7 +222,7 @@
         <thead><tr>
           <th style="width:32%">Role</th>
           <th class="numc" style="width:90px">Hourly Rate (€/hr)</th>
-          <th style="width:53%">Disciplines</th>
+          <th style="width:53%">Deliverables</th>
           <th style="width:6%"></th>
         </tr></thead>
         <tbody id="rateCardBody"></tbody>
@@ -233,13 +233,13 @@
     <section class="card">
       <div style="display:flex; justify-content:space-between; align-items:flex-start;">
         <div>
-          <h2>Disciplines</h2>
-          <div class="sub">Add, rename, or deactivate disciplines and their default task catalog.</div>
+          <h2>Deliverables</h2>
+          <div class="sub">Add, rename, or deactivate deliverables and their default task catalog.</div>
         </div>
         <div id="disciplinesReorderToggleWrap"></div>
       </div>
       <div id="disciplinesList" style="margin-top:12px;"></div>
-      <div class="row-actions"><button class="btn ghost small" id="addDiscipline">+ Add discipline</button></div>
+      <div class="row-actions"><button class="btn ghost small" id="addDiscipline">+ Add deliverable</button></div>
     </section>
 
     <section class="card">

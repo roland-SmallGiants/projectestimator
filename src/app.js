@@ -124,7 +124,7 @@ function wireEstimatorActions() {
     const summary = `
       <div style="border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-top:4px; font-size:13px;">
         <div><strong>${esc(snap.clientName)}</strong></div>
-        <div class="sub" style="margin-top:2px;">${esc((snap.disciplines || []).join(", ")) || "No disciplines selected"}</div>
+        <div class="sub" style="margin-top:2px;">${esc((snap.disciplines || []).join(", ")) || "No deliverables selected"}</div>
         <div style="margin-top:6px; display:flex; justify-content:space-between;">
           <span class="sub">${snap.grandHours.toLocaleString("nl-NL")} hrs \u00b7 ${snap.items.length} task${snap.items.length === 1 ? "" : "s"}</span>
           <strong>${money(snap.finalPrice)}</strong>

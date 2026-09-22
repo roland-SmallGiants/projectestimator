@@ -373,7 +373,7 @@ export function renderDisciplinesAdmin() {
     list.innerHTML = ids.map((id) => `<div class="discipline-row discipline-reorder-item" draggable="true" data-id="${id}">
       <span class="sub" style="cursor:grab; user-select:none; margin-right:8px;">\u283f</span>
       <span class="disc-name-display" style="font-size:13px;">${esc(state.disciplines[id].name)}</span>
-    </div>`).join("") || `<div class="task-empty">No disciplines yet.</div>`;
+    </div>`).join("") || `<div class="task-empty">No deliverables yet.</div>`;
     wireDisciplineDragAndDrop(list);
     return;
   }
@@ -473,15 +473,15 @@ export function renderDisciplinesAdmin() {
           ${deactivated ? `<span class="sub" style="color:var(--rose);">Deactivated</span>` : ""}
         </span>
         <span style="display:flex; align-items:center; gap:4px;">
-          <button type="button" class="disc-name-edit-btn icon-btn" title="Rename discipline">${ICON_EDIT}</button>
+          <button type="button" class="disc-name-edit-btn icon-btn" title="Rename deliverable">${ICON_EDIT}</button>
           <button type="button" class="disc-name-cancel-btn icon-btn cancel" title="Cancel" style="display:none;">${ICON_CANCEL}</button>
           <button type="button" class="disc-name-confirm-btn icon-btn confirm" title="Confirm" style="display:none;">${ICON_CONFIRM}</button>
-          <button type="button" class="icon-btn disc-toggle-active-btn" title="${deactivated ? "Reactivate discipline" : "Deactivate discipline"}">${ICON_POWER}</button>
+          <button type="button" class="icon-btn disc-toggle-active-btn" title="${deactivated ? "Reactivate deliverable" : "Deactivate deliverable"}">${ICON_POWER}</button>
         </span>
       </div>
       ${taskListHtml}
     </div>`;
-  }).join("") || `<div class="task-empty">No disciplines yet.</div>`;
+  }).join("") || `<div class="task-empty">No deliverables yet.</div>`;
 
   list.querySelectorAll(".discipline-row").forEach((row) => {
     const id = row.dataset.id;
@@ -568,7 +568,7 @@ export function renderDisciplinesAdmin() {
         const taskName = state.taskCatalog[itemId] ? state.taskCatalog[itemId].task : "(untitled task)";
         openConfirm(
           "Delete this task?",
-          `This permanently removes "${taskName}" from ${state.disciplines[id] ? state.disciplines[id].name : "this discipline"}'s default task list. Drafts that already have it keep their own copy; it just won't be offered to new drafts.`,
+          `This permanently removes "${taskName}" from ${state.disciplines[id] ? state.disciplines[id].name : "this deliverable"}'s default task list. Drafts that already have it keep their own copy; it just won't be offered to new drafts.`,
           async () => { await db.collection("task_catalog").doc(itemId).delete().catch(() => {}); }
         );
       };
@@ -688,7 +688,7 @@ export function wireAddDiscipline() {
   document.getElementById("addDiscipline").onclick = async () => {
     const ids = Object.keys(state.disciplines);
     const order = ids.length ? Math.max(...ids.map((id) => state.disciplines[id].order ?? 0)) + 1 : 0;
-    await db.collection("disciplines").add({ name: "New discipline", order });
+    await db.collection("disciplines").add({ name: "New deliverable", order });
   };
 }
 

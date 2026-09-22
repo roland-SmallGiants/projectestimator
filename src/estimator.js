@@ -194,7 +194,7 @@ export function renderItems() {
       <td><input type="text" class="it-notes" data-id="${id}" value="${esc(it.notes || "")}" ${ro ? "disabled" : ""}></td>
       <td>${ro ? "" : `<button class="btn small danger it-del" data-id="${id}">\u2715</button>`}</td>
     </tr>`;
-  }).join("") || `<tr><td colspan="7" class="sub" style="text-align:center; padding:16px;">No tasks in this discipline yet.</td></tr>`;
+  }).join("") || `<tr><td colspan="7" class="sub" style="text-align:center; padding:16px;">No tasks in this deliverable yet.</td></tr>`;
 
   if (!ro && items.length) {
     body.innerHTML += `<tr>
