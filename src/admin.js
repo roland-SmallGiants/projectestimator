@@ -488,8 +488,9 @@ export function renderDisciplinesAdmin() {
 
     row.querySelector(".disc-collapse-toggle").onclick = (e) => {
       if (e.target.classList.contains("disc-name-input")) return; // don't collapse while editing the name
-      if (state.expandedAdminDisciplines.has(id)) state.expandedAdminDisciplines.delete(id);
-      else state.expandedAdminDisciplines.add(id);
+      const wasOpen = state.expandedAdminDisciplines.has(id);
+      state.expandedAdminDisciplines.clear(); // accordion: only one deliverable open at a time
+      if (!wasOpen) state.expandedAdminDisciplines.add(id);
       renderDisciplinesAdmin();
     };
 
