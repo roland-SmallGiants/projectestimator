@@ -24,6 +24,7 @@ export const state = {
   expandedHoursDisciplines: new Set(),
   expandedNeverUsedDisciplines: new Set(),
   expandedAdminDisciplines: new Set(),
+  expandedTaskTodos: new Set(),
   quoteListActiveTab: "pending",
   expandedArchiveCategories: new Set(),
   expandedEditHistory: new Set(),

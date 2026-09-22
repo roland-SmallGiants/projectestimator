@@ -215,7 +215,14 @@ export function wireArchiveRows(wrap, rerender) {
         "Send this quote's tasks to Productive?",
         `This creates ${validItems.length} task(s) in Productive, one per line item, for "${esc(q.clientName)}". This can't be undone from here \u2014 duplicate tasks would need to be removed in Productive directly.`,
         async () => {
-          const items = validItems;
+          // Look up each item's current to-dos from the catalog at send time
+          // (not from a stale copy on the quote itself), since to-dos are
+          // Admin-editable and should reflect whatever they are right now.
+          const items = validItems.map((it) => {
+            const catalogEntry = Object.values(state.taskCatalog || {}).find((t) => t.task === it.task && t.category === it.category);
+            const todos = catalogEntry && Array.isArray(catalogEntry.todos) ? catalogEntry.todos : [];
+            return { ...it, todos };
+          });
           try {
             const res = await fetch("/api/productive/create-tasks", {
               method: "POST",

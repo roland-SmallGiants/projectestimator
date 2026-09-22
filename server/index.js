@@ -318,7 +318,8 @@ app.post("/api/productive/create-tasks", async (req, res) => {
     for (const item of disciplineItems) {
       try {
         const productiveTaskId = await createTaskInProductive(item, { clientName, taskListId, workflowStatusId, parentTaskId });
-        results.push({ task: item.task, ok: true, productiveTaskId });
+        const todosResult = await createTodosForTask(productiveTaskId, item.todos);
+        results.push({ task: item.task, ok: true, productiveTaskId, todosCreated: todosResult.created, todosFailed: todosResult.failed });
       } catch (err) {
         results.push({ task: item.task, ok: false, error: String(err && err.message ? err.message : err) });
       }
@@ -373,6 +374,34 @@ async function findWorkflowStatusIdByName(name) {
   if (!res.ok || !Array.isArray(body.data)) return null;
   const match = body.data.find((s) => s.attributes && s.attributes.name === name);
   return match ? match.id : null;
+}
+
+
+async function createTodosForTask(productiveTaskId, todoDescriptions) {
+  if (!Array.isArray(todoDescriptions) || !todoDescriptions.length) return { created: 0, failed: 0 };
+  let created = 0, failed = 0;
+  for (let i = 0; i < todoDescriptions.length; i++) {
+    try {
+      const res = await fetch("https://api.productive.io/api/v2/todos", {
+        method: "POST",
+        headers: productiveHeaders(),
+        body: JSON.stringify({
+          data: {
+            type: "todos",
+            attributes: {
+              description: todoDescriptions[i],
+              task_id: Number(productiveTaskId),
+              position: i + 1,
+            },
+          },
+        }),
+      });
+      if (res.ok) created++; else failed++;
+    } catch (err) {
+      failed++;
+    }
+  }
+  return { created, failed };
 }
 
 async function createTaskInProductive(item, context) {

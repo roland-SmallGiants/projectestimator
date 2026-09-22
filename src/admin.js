@@ -232,6 +232,50 @@ function wireTaskDragAndDrop(listEl) {
   });
 }
 
+let draggedTodoKey = null; // `${itemId}::${originalIndex}`
+
+function wireTodoDragAndDrop(row) {
+  row.querySelectorAll(".todo-row").forEach((tr) => {
+    tr.addEventListener("dragstart", (e) => {
+      e.stopPropagation();
+      draggedTodoKey = `${tr.dataset.itemId}::${tr.dataset.todoIndex}`;
+      tr.style.opacity = "0.4";
+    });
+    tr.addEventListener("dragend", () => {
+      tr.style.opacity = "";
+      draggedTodoKey = null;
+    });
+    tr.addEventListener("dragover", (e) => {
+      if (!draggedTodoKey) return;
+      const [draggedItemId] = draggedTodoKey.split("::");
+      if (tr.dataset.itemId !== draggedItemId) return; // only reorder within the same task's own to-do list
+      e.preventDefault();
+      e.stopPropagation();
+      const draggedEl = row.querySelector(`.todo-row[data-item-id="${draggedItemId}"][data-todo-index="${draggedTodoKey.split("::")[1]}"]`);
+      if (!draggedEl || draggedEl === tr) return;
+      const rect = tr.getBoundingClientRect();
+      const before = (e.clientY - rect.top) < rect.height / 2;
+      tr.parentNode.insertBefore(draggedEl, before ? tr : tr.nextSibling);
+    });
+    tr.addEventListener("drop", async (e) => {
+      if (!draggedTodoKey) return;
+      const [draggedItemId] = draggedTodoKey.split("::");
+      if (tr.dataset.itemId !== draggedItemId) return;
+      e.preventDefault();
+      e.stopPropagation();
+      // Prefer the live input value if that row is mid-edit, otherwise the display text.
+      const orderedTexts = [];
+      row.querySelectorAll(`.todo-row[data-item-id="${draggedItemId}"]`).forEach((todoTr) => {
+        const display = todoTr.querySelector(".todo-text-display");
+        const input = todoTr.querySelector(".todo-text-input");
+        const text = input && input.style.display !== "none" ? input.value.trim() : (display ? display.textContent : "");
+        if (text) orderedTexts.push(text);
+      });
+      await db.collection("task_catalog").doc(draggedItemId).update({ todos: orderedTexts }).catch(() => {});
+    });
+  });
+}
+
 async function persistTaskOrder(listEl) {
   const ids = [...listEl.querySelectorAll(".task-drag-item")].map((li) => li.dataset.itemId);
   const itemsSnap = await db.collection("draft_items").get();
@@ -306,17 +350,47 @@ export function renderDisciplinesAdmin() {
           </tr>
         </thead>
         <tbody class="task-drag-list" data-disc-id="${id}">
-          ${tasks.map(([tid, t]) => `<tr class="task-drag-item" draggable="true" data-item-id="${tid}">
-            <td><span class="sub" style="cursor:grab; user-select:none;">\u283f</span> ${esc(t.task)}</td>
-            <td></td>
-            ${rolesForThisDiscipline.map((r) => {
-              const applicable = isApplicable(r);
-              return `<td class="numc">${applicable
-                ? `<input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5">`
-                : `<span title="${esc(r.role)} doesn't apply to ${esc(d.name)}"></span>`}</td>`;
-            }).join("")}
-            <td><button class="btn small danger disc-task-del" data-item-id="${tid}">\u2715</button></td>
-          </tr>`).join("") || `<tr><td colspan="${colCount}" class="sub">No tasks yet.</td></tr>`}
+          ${tasks.map(([tid, t]) => {
+            const todos = Array.isArray(t.todos) ? t.todos : [];
+            const todosOpen = state.expandedTaskTodos.has(tid);
+            const bodyColspan = rolesForThisDiscipline.length + 2; // task-name + spacer + role columns, everything except the delete column
+            const taskRow = `<tr class="task-drag-item" draggable="true" data-item-id="${tid}">
+              <td><span class="sub" style="cursor:grab; user-select:none;">\u283f</span> ${esc(t.task)}<button type="button" class="btn ghost small todo-toggle-btn" data-item-id="${tid}" style="margin-left:8px;">${todos.length} to-do${todos.length === 1 ? "" : "s"} ${todosOpen ? "\u25be" : "\u25b8"}</button></td>
+              <td></td>
+              ${rolesForThisDiscipline.map((r) => {
+                const applicable = isApplicable(r);
+                return `<td class="numc">${applicable
+                  ? `<input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5">`
+                  : `<span title="${esc(r.role)} doesn't apply to ${esc(d.name)}"></span>`}</td>`;
+              }).join("")}
+              <td><button class="btn small danger disc-task-del" data-item-id="${tid}">\u2715</button></td>
+            </tr>`;
+
+            if (!todosOpen) return taskRow;
+
+            const todoRows = todos.map((todoText, ti) => `<tr class="todo-row" draggable="true" data-item-id="${tid}" data-todo-index="${ti}">
+              <td colspan="${bodyColspan}" style="background:rgba(255,255,255,0.02);">
+                <div style="display:flex; align-items:center; gap:8px; padding-left:20px;">
+                  <span class="sub todo-drag-handle" style="cursor:grab; user-select:none;">\u283f</span>
+                  <span class="sub todo-text-display" style="flex:1;" data-item-id="${tid}" data-todo-index="${ti}">${esc(todoText)}</span>
+                  <input type="text" class="todo-text-input" value="${esc(todoText)}" data-item-id="${tid}" data-todo-index="${ti}" style="display:none; flex:1;">
+                  <button type="button" class="btn ghost small todo-edit-btn" data-item-id="${tid}" data-todo-index="${ti}" title="Edit">\u270f\ufe0f</button>
+                </div>
+              </td>
+              <td style="background:rgba(255,255,255,0.02);"><button class="btn small danger todo-del-btn" data-item-id="${tid}" data-todo-index="${ti}">\u2715</button></td>
+            </tr>`).join("");
+
+            const addTodoRow = `<tr class="add-todo-row" style="background:rgba(255,255,255,0.02);">
+              <td colspan="${bodyColspan + 1}">
+                <div style="display:flex; align-items:center; gap:8px; padding-left:20px;">
+                  <input type="text" class="new-todo-input" data-item-id="${tid}" placeholder="New to-do" style="max-width:320px;">
+                  <button type="button" class="btn ghost small add-todo-btn" data-item-id="${tid}">+ Add to-do</button>
+                </div>
+              </td>
+            </tr>`;
+
+            return taskRow + todoRows + addTodoRow;
+          }).join("") || `<tr><td colspan="${colCount}" class="sub">No tasks yet.</td></tr>`}
         </tbody>
       </table>
       <div class="row-actions">
@@ -377,6 +451,63 @@ export function renderDisciplinesAdmin() {
         );
       };
     });
+
+    row.querySelectorAll(".todo-toggle-btn").forEach((btn) => {
+      btn.onclick = () => {
+        const itemId = btn.dataset.itemId;
+        if (state.expandedTaskTodos.has(itemId)) state.expandedTaskTodos.delete(itemId);
+        else state.expandedTaskTodos.add(itemId);
+        renderDisciplinesAdmin();
+      };
+    });
+    row.querySelectorAll(".todo-edit-btn").forEach((btn) => {
+      btn.onclick = () => {
+        const { itemId, todoIndex } = btn.dataset;
+        const display = row.querySelector(`.todo-text-display[data-item-id="${itemId}"][data-todo-index="${todoIndex}"]`);
+        const input = row.querySelector(`.todo-text-input[data-item-id="${itemId}"][data-todo-index="${todoIndex}"]`);
+        if (!display || !input) return;
+        display.style.display = "none";
+        input.style.display = "";
+        input.focus();
+        input.select();
+      };
+    });
+    row.querySelectorAll(".todo-text-input").forEach((input) => {
+      const save = async () => {
+        const { itemId, todoIndex } = input.dataset;
+        const t = state.taskCatalog[itemId];
+        if (!t) return;
+        const todos = [...(Array.isArray(t.todos) ? t.todos : [])];
+        const newText = input.value.trim();
+        if (newText) todos[Number(todoIndex)] = newText;
+        await db.collection("task_catalog").doc(itemId).update({ todos }).catch(() => {});
+      };
+      input.addEventListener("blur", save);
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+    });
+    row.querySelectorAll(".todo-del-btn").forEach((btn) => {
+      btn.onclick = async () => {
+        const { itemId, todoIndex } = btn.dataset;
+        const t = state.taskCatalog[itemId];
+        if (!t) return;
+        const todos = [...(Array.isArray(t.todos) ? t.todos : [])];
+        todos.splice(Number(todoIndex), 1);
+        await db.collection("task_catalog").doc(itemId).update({ todos }).catch(() => {});
+      };
+    });
+    row.querySelectorAll(".add-todo-btn").forEach((btn) => {
+      btn.onclick = async () => {
+        const itemId = btn.dataset.itemId;
+        const input = row.querySelector(`.new-todo-input[data-item-id="${itemId}"]`);
+        const text = input.value.trim();
+        if (!text) return;
+        const t = state.taskCatalog[itemId];
+        const todos = [...(t && Array.isArray(t.todos) ? t.todos : []), text];
+        await db.collection("task_catalog").doc(itemId).update({ todos }).catch(() => {});
+        input.value = "";
+      };
+    });
+    wireTodoDragAndDrop(row);
     wireTaskDragAndDrop(row.querySelector(".task-drag-list"));
     const addTaskBtn = row.querySelector(".add-task-btn");
     if (addTaskBtn) {
