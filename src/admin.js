@@ -401,7 +401,7 @@ export function renderDisciplinesAdmin() {
         <tr>
           <th style="width:30%; padding:0 8px 8px 22px;"></th>
           <th style="padding:0 8px 8px;"></th>
-          ${rolesForThisDiscipline.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px; padding:0 8px 8px; color:var(--ink-soft); text-transform:uppercase;"><span style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.3;">${isApplicable(r) ? esc(r.role) : ""}</span></th>`).join("")}
+          ${rolesForThisDiscipline.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px; padding:0 8px 8px; color:var(--ink-soft); text-transform:uppercase; white-space:normal; line-height:1.3;">${isApplicable(r) ? esc(r.role) : ""}</th>`).join("")}
           <th style="width:30px;"></th>
         </tr>
       </table>` : "";
