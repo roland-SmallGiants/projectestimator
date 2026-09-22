@@ -358,7 +358,7 @@ export function renderDisciplinesAdmin() {
   // width, so the columns line up consistently down the whole page. Roles that
   // don't apply to a given discipline still get a column; the cell is just disabled.
   const allRoles = Object.values(state.rateCard).filter((r) => r.role).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  const ROLE_COL_WIDTH = 150; // matches the Rate Card's Hourly Rate column for a page-wide consistent look; verified via direct measurement to keep "Tracking Specialist (Sr.)" to exactly 2 lines
+  const ROLE_COL_WIDTH = 120; // matches the Rate Card's Hourly Rate column for a page-wide consistent look; re-verified with a proper font-loaded measurement (real breakpoint was 110-115px, not the ~150px my earlier timing-flawed test suggested)
 
   if (reorderToggleWrap) {
     reorderToggleWrap.innerHTML = `<button type="button" class="btn ghost small ${state.disciplineReorderMode ? "primary" : ""}" id="disciplinesReorderToggleBtn">${state.disciplineReorderMode ? "\u21c5 Done reordering" : "\u21c5 Change order"}</button>`;
@@ -399,7 +399,7 @@ export function renderDisciplinesAdmin() {
 
       const headerHtml = tasks.length ? `<table style="table-layout:fixed; width:100%; font-size:11px; margin-top:10px; margin-bottom:2px;">
         <tr>
-          <th style="width:30%; padding:0 8px 8px 22px;"></th>
+          <th style="width:280px; padding:0 8px 8px 22px;"></th>
           <th style="padding:0 8px 8px;"></th>
           ${rolesForThisDiscipline.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px; padding:0 8px 8px; color:var(--ink-soft); text-transform:uppercase; white-space:normal; line-height:1.3;">${isApplicable(r) ? esc(r.role) : ""}</th>`).join("")}
           <th style="width:30px;"></th>
@@ -415,7 +415,7 @@ export function renderDisciplinesAdmin() {
         // to-do section below \u2014 it no longer hides the hours.
         const headRow = `<table class="task-row-collapsed" data-item-id="${tid}" style="table-layout:fixed; width:100%; font-size:12.5px; border-top:1px solid rgba(255,255,255,0.06);">
           <tr>
-            <td style="width:30%; padding:8px 8px 8px 4px;">
+            <td style="width:280px; white-space:nowrap; padding:8px 8px 8px 4px;">
               <span class="task-row-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer; padding-left:18px;">
                 <span class="sub" style="display:inline-block; width:12px; margin-left:-18px;">${taskOpen ? "\u25be" : "\u25b8"}</span>
                 <span>${esc(t.task)}</span>
