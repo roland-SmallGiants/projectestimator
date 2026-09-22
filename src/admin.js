@@ -19,6 +19,7 @@ const ICON_EDIT = `<svg viewBox="0 0 24 24" style="width:13px; height:13px; stro
 const ICON_CANCEL = `<svg viewBox="0 0 24 24" style="width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.8;"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>`;
 const ICON_CONFIRM = `<svg viewBox="0 0 24 24" style="width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.8;"><path d="M20 6 9 17l-5-5"/></svg>`;
 const ICON_POWER = `<svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.8;"><path d="M12 2v10"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>`;
+const ICON_DELETE = `<svg viewBox="0 0 24 24" style="width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.8;"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
 
 export function subscribeAdminCatalogs(onChange) {
   const unsubs = [
@@ -168,7 +169,7 @@ export function renderRateCard() {
       <td><span style="display:flex; align-items:center; gap:8px;"><span class="sub" style="cursor:grab; user-select:none;">\u283f</span><input type="text" class="role-name" value="${esc(r.role)}"></span></td>
       <td class="numc"><input type="number" class="role-rate" value="${r.rate}" min="0" step="1"></td>
       <td>${rows}</td>
-      <td><button class="btn small danger role-del">\u2715</button></td>
+      <td><button class="icon-btn cancel role-del" title="Delete role">${ICON_DELETE}</button></td>
     </tr>`;
   }).join("") || `<tr><td colspan="4" style="color:var(--ink-soft); text-align:center; padding:16px;">No roles yet.</td></tr>`;
 
@@ -356,13 +357,10 @@ export function renderDisciplinesAdmin() {
       <table class="task-hours-table" style="table-layout:fixed; width:100%; max-width:100%; margin-top:10px; font-size:12.5px;">
         <thead>
           <tr>
-            <th rowspan="2" style="width:30%;">Default tasks</th>
-            <th rowspan="2"></th>
-            ${allRoles.length ? `<th class="numc sub" colspan="${allRoles.length}" style="font-weight:600; padding-bottom:2px;">Default Est. Hrs</th>` : ""}
-            <th rowspan="2" style="width:30px;"></th>
-          </tr>
-          <tr>
+            <th style="width:30%;">Default Estimated Hours</th>
+            <th></th>
             ${rolesForThisDiscipline.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px;">${isApplicable(r) ? esc(r.role) : ""}</th>`).join("")}
+            <th style="width:30px;"></th>
           </tr>
         </thead>
         <tbody class="task-drag-list" data-disc-id="${id}">
@@ -379,7 +377,7 @@ export function renderDisciplinesAdmin() {
                   ? `<input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5">`
                   : `<span title="${esc(r.role)} doesn't apply to ${esc(d.name)}"></span>`}</td>`;
               }).join("")}
-              <td><button class="btn small danger disc-task-del" data-item-id="${tid}">\u2715</button></td>
+              <td><button class="icon-btn cancel disc-task-del" data-item-id="${tid}" title="Delete task">${ICON_DELETE}</button></td>
             </tr>`;
 
             if (!todosOpen) return taskRow;
@@ -395,7 +393,7 @@ export function renderDisciplinesAdmin() {
                   <button type="button" class="icon-btn confirm todo-confirm-btn" data-item-id="${tid}" data-todo-index="${ti}" title="Confirm" style="display:none;">${ICON_CONFIRM}</button>
                 </div>
               </td>
-              <td style="background:rgba(255,255,255,0.02);"><button class="btn small danger todo-del-btn" data-item-id="${tid}" data-todo-index="${ti}">\u2715</button></td>
+              <td style="background:rgba(255,255,255,0.02);"><button class="icon-btn cancel todo-del-btn" data-item-id="${tid}" data-todo-index="${ti}" title="Delete to-do">${ICON_DELETE}</button></td>
             </tr>`).join("");
 
             const addTodoRow = `<tr class="add-todo-row" style="background:rgba(255,255,255,0.02);">
@@ -635,7 +633,7 @@ export function renderTeamCard() {
   const users = [...raw].sort((a, b) => (a === "Roland" ? 1 : b === "Roland" ? -1 : a.localeCompare(b)));
   list.innerHTML = users.map((u) => `<div class="chip" style="display:inline-flex; align-items:center; gap:8px; margin:0 8px 8px 0;">
     <span>${esc(u)}</span>
-    ${u === "Roland" ? "" : `<button type="button" class="team-remove-btn" data-name="${esc(u)}" style="all:unset; cursor:pointer; color:var(--rose); font-weight:700;">\u2715</button>`}
+    ${u === "Roland" ? "" : `<button type="button" class="icon-btn cancel team-remove-btn" data-name="${esc(u)}" title="Remove">${ICON_DELETE}</button>`}
   </div>`).join("");
   list.querySelectorAll(".team-remove-btn").forEach((btn) => {
     btn.onclick = () => {
