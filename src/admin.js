@@ -13,6 +13,13 @@ import { state, CATEGORIES } from "./state.js";
 import { esc, moneyPlain, wireNumberStepper } from "./utils.js";
 import { openConfirm } from "./modals.js";
 
+// Plain SVG line icons (always monochrome, inherit currentColor) instead of
+// emoji characters, which render as full-color glyphs on most systems.
+const ICON_EDIT = `<svg viewBox="0 0 24 24" style="width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.8;"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+const ICON_CANCEL = `<svg viewBox="0 0 24 24" style="width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.8;"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>`;
+const ICON_CONFIRM = `<svg viewBox="0 0 24 24" style="width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.8;"><path d="M20 6 9 17l-5-5"/></svg>`;
+const ICON_POWER = `<svg viewBox="0 0 24 24" style="width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.8;"><path d="M12 2v10"/><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/></svg>`;
+
 export function subscribeAdminCatalogs(onChange) {
   const unsubs = [
     db.collection("disciplines").onSnapshot((qs) => {
@@ -301,7 +308,12 @@ export function getTaskHoursForRole(t, roleName) {
 export function renderDisciplinesAdmin() {
   const list = document.getElementById("disciplinesList");
   if (!list) return;
-  const ids = Object.keys(state.disciplines).sort((a, b) => (state.disciplines[a].order ?? 0) - (state.disciplines[b].order ?? 0));
+  const ids = Object.keys(state.disciplines).sort((a, b) => {
+    const aInactive = state.disciplines[a].deactivated ? 1 : 0;
+    const bInactive = state.disciplines[b].deactivated ? 1 : 0;
+    if (aInactive !== bInactive) return aInactive - bInactive; // active first, deactivated at the end
+    return (state.disciplines[a].order ?? 0) - (state.disciplines[b].order ?? 0);
+  });
   // Every discipline's table shows the SAME roles, in the SAME order, at the SAME
   // width, so the columns line up consistently down the whole page. Roles that
   // don't apply to a given discipline still get a column; the cell is just disabled.
@@ -324,16 +336,20 @@ export function renderDisciplinesAdmin() {
 
     const isOpen = state.expandedAdminDisciplines.has(id);
 
-    return `<div class="discipline-row" data-id="${id}" style="border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:12px;">
+    const deactivated = Boolean(d.deactivated);
+    return `<div class="discipline-row ${deactivated ? "discipline-deactivated" : ""}" data-id="${id}">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
         <span class="disc-collapse-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
           <span style="display:inline-block; width:14px; color:var(--ink-soft);">${isOpen ? "\u25be" : "\u25b8"}</span>
-          <span class="disc-name-display" style="font-weight:700;">${esc(d.name)}</span>
-          <input type="text" class="disc-name-input" value="${esc(d.name)}" style="display:none; font-weight:700; max-width:260px;">
+          <span class="disc-name-display" style="font-size:13px; font-weight:400;">${esc(d.name)}</span>
+          <input type="text" class="disc-name-input" value="${esc(d.name)}" style="display:none; font-size:13px; font-weight:400; max-width:260px;">
+          ${deactivated ? `<span class="sub" style="color:var(--rose);">Deactivated</span>` : ""}
         </span>
-        <span style="display:flex; align-items:center; gap:8px;">
-          <button type="button" class="disc-name-edit-btn" title="Rename discipline" style="all:unset; cursor:pointer; color:var(--ink-soft); font-size:13px;">\u270f\ufe0f</button>
-          <button class="btn small danger disc-del">\u2715</button>
+        <span style="display:flex; align-items:center; gap:4px;">
+          <button type="button" class="disc-name-edit-btn icon-btn" title="Rename discipline">${ICON_EDIT}</button>
+          <button type="button" class="disc-name-cancel-btn icon-btn cancel" title="Cancel" style="display:none;">${ICON_CANCEL}</button>
+          <button type="button" class="disc-name-confirm-btn icon-btn confirm" title="Confirm" style="display:none;">${ICON_CONFIRM}</button>
+          <button type="button" class="icon-btn disc-toggle-active-btn" title="${deactivated ? "Reactivate discipline" : "Deactivate discipline"}">${ICON_POWER}</button>
         </span>
       </div>
       ${!isOpen ? "" : `
@@ -374,7 +390,9 @@ export function renderDisciplinesAdmin() {
                   <span class="sub todo-drag-handle" style="cursor:grab; user-select:none;">\u283f</span>
                   <span class="sub todo-text-display" style="flex:1;" data-item-id="${tid}" data-todo-index="${ti}">${esc(todoText)}</span>
                   <input type="text" class="todo-text-input" value="${esc(todoText)}" data-item-id="${tid}" data-todo-index="${ti}" style="display:none; flex:1;">
-                  <button type="button" class="btn ghost small todo-edit-btn" data-item-id="${tid}" data-todo-index="${ti}" title="Edit">\u270f\ufe0f</button>
+                  <button type="button" class="icon-btn todo-edit-btn" data-item-id="${tid}" data-todo-index="${ti}" title="Edit">${ICON_EDIT}</button>
+                  <button type="button" class="icon-btn cancel todo-cancel-btn" data-item-id="${tid}" data-todo-index="${ti}" title="Cancel" style="display:none;">${ICON_CANCEL}</button>
+                  <button type="button" class="icon-btn confirm todo-confirm-btn" data-item-id="${tid}" data-todo-index="${ti}" title="Confirm" style="display:none;">${ICON_CONFIRM}</button>
                 </div>
               </td>
               <td style="background:rgba(255,255,255,0.02);"><button class="btn small danger todo-del-btn" data-item-id="${tid}" data-todo-index="${ti}">\u2715</button></td>
@@ -412,24 +430,43 @@ export function renderDisciplinesAdmin() {
 
     const nameDisplay = row.querySelector(".disc-name-display");
     const nameInput = row.querySelector(".disc-name-input");
-    const commitRename = () => {
-      renameDiscipline(id, nameInput.value);
-      nameInput.style.display = "none";
-      nameDisplay.style.display = "";
-    };
-    row.querySelector(".disc-name-edit-btn").onclick = () => {
+    const nameEditBtn = row.querySelector(".disc-name-edit-btn");
+    const nameCancelBtn = row.querySelector(".disc-name-cancel-btn");
+    const nameConfirmBtn = row.querySelector(".disc-name-confirm-btn");
+    const enterNameEdit = () => {
       nameDisplay.style.display = "none";
       nameInput.style.display = "";
+      nameEditBtn.style.display = "none";
+      nameCancelBtn.style.display = "";
+      nameConfirmBtn.style.display = "";
       nameInput.focus();
       nameInput.select();
     };
-    nameInput.onblur = commitRename;
+    const exitNameEdit = () => {
+      nameDisplay.style.display = "";
+      nameInput.style.display = "none";
+      nameEditBtn.style.display = "";
+      nameCancelBtn.style.display = "none";
+      nameConfirmBtn.style.display = "none";
+    };
+    nameEditBtn.onclick = enterNameEdit;
+    nameCancelBtn.onclick = () => {
+      nameInput.value = state.disciplines[id].name;
+      exitNameEdit();
+    };
+    nameConfirmBtn.onclick = () => {
+      renameDiscipline(id, nameInput.value);
+      exitNameEdit();
+    };
     nameInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") nameInput.blur();
-      if (e.key === "Escape") { nameInput.value = state.disciplines[id].name; nameInput.blur(); }
+      if (e.key === "Enter") nameConfirmBtn.click();
+      if (e.key === "Escape") nameCancelBtn.click();
     });
 
-    row.querySelector(".disc-del").onclick = () => openDeleteDisciplineConfirm(id);
+    row.querySelector(".disc-toggle-active-btn").onclick = () => {
+      const currentlyDeactivated = Boolean(state.disciplines[id] && state.disciplines[id].deactivated);
+      db.collection("disciplines").doc(id).update({ deactivated: !currentlyDeactivated }).catch(() => {});
+    };
 
     row.querySelectorAll(".task-role-hours").forEach((input) => {
       input.onchange = () => {
@@ -461,29 +498,47 @@ export function renderDisciplinesAdmin() {
       };
     });
     row.querySelectorAll(".todo-edit-btn").forEach((btn) => {
-      btn.onclick = () => {
-        const { itemId, todoIndex } = btn.dataset;
-        const display = row.querySelector(`.todo-text-display[data-item-id="${itemId}"][data-todo-index="${todoIndex}"]`);
-        const input = row.querySelector(`.todo-text-input[data-item-id="${itemId}"][data-todo-index="${todoIndex}"]`);
-        if (!display || !input) return;
+      const { itemId, todoIndex } = btn.dataset;
+      const display = row.querySelector(`.todo-text-display[data-item-id="${itemId}"][data-todo-index="${todoIndex}"]`);
+      const input = row.querySelector(`.todo-text-input[data-item-id="${itemId}"][data-todo-index="${todoIndex}"]`);
+      const cancelBtn = row.querySelector(`.todo-cancel-btn[data-item-id="${itemId}"][data-todo-index="${todoIndex}"]`);
+      const confirmBtn = row.querySelector(`.todo-confirm-btn[data-item-id="${itemId}"][data-todo-index="${todoIndex}"]`);
+      if (!display || !input || !cancelBtn || !confirmBtn) return;
+
+      const enterEdit = () => {
         display.style.display = "none";
         input.style.display = "";
+        btn.style.display = "none";
+        cancelBtn.style.display = "";
+        confirmBtn.style.display = "";
         input.focus();
         input.select();
       };
-    });
-    row.querySelectorAll(".todo-text-input").forEach((input) => {
-      const save = async () => {
-        const { itemId, todoIndex } = input.dataset;
+      const exitEdit = () => {
+        display.style.display = "";
+        input.style.display = "none";
+        btn.style.display = "";
+        cancelBtn.style.display = "none";
+        confirmBtn.style.display = "none";
+      };
+      btn.onclick = enterEdit;
+      cancelBtn.onclick = () => {
+        input.value = display.textContent;
+        exitEdit();
+      };
+      confirmBtn.onclick = async () => {
         const t = state.taskCatalog[itemId];
         if (!t) return;
         const todos = [...(Array.isArray(t.todos) ? t.todos : [])];
         const newText = input.value.trim();
         if (newText) todos[Number(todoIndex)] = newText;
         await db.collection("task_catalog").doc(itemId).update({ todos }).catch(() => {});
+        exitEdit();
       };
-      input.addEventListener("blur", save);
-      input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") confirmBtn.click();
+        if (e.key === "Escape") cancelBtn.click();
+      });
     });
     row.querySelectorAll(".todo-del-btn").forEach((btn) => {
       btn.onclick = async () => {
@@ -538,29 +593,6 @@ async function renameDiscipline(id, newName) {
       await db.collection("rate_card").doc(d.id).update({ categories: cats.map((c) => (c === oldName ? newName : c)) }).catch(() => {});
     }
   }
-}
-
-let pendingDeleteDisciplineId = null;
-export function openDeleteDisciplineConfirm(id) {
-  const name = state.disciplines[id] && state.disciplines[id].name;
-  if (!name) return;
-  pendingDeleteDisciplineId = id;
-  openConfirm(
-    "Delete this discipline?",
-    `This permanently deletes "${name}" from the shared catalog and removes it from any role's "Applies to" list. It will NOT remove it from drafts that already include it — those keep their existing tasks. This can't be undone.`,
-    async () => {
-      const catalogSnap = await db.collection("task_catalog").get();
-      for (const d of catalogSnap.docs) {
-        if (d.data().category === name) await db.collection("task_catalog").doc(d.id).delete().catch(() => {});
-      }
-      const rateSnap = await db.collection("rate_card").get();
-      for (const d of rateSnap.docs) {
-        const cats = d.data().categories || [];
-        if (cats.includes(name)) await db.collection("rate_card").doc(d.id).update({ categories: cats.filter((c) => c !== name) }).catch(() => {});
-      }
-      await db.collection("disciplines").doc(id).delete().catch(() => {});
-    }
-  );
 }
 
 export function wireAddDiscipline() {

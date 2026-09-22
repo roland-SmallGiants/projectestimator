@@ -69,6 +69,13 @@ td { padding:8px; border-bottom:1px solid var(--line); }
 .archive-table tr:first-child td { border-top:none; }
 .archive-name-cell { display:flex; align-items:center; gap:8px; }
 .archive-stale-badge { display:inline-flex; align-items:center; justify-content:center; height:16px; padding:0 6px; border-radius:999px; background:rgba(214,69,69,0.15); color:var(--rose); font-size:9px; font-weight:700; cursor:default; flex-shrink:0; white-space:nowrap; }
+.icon-btn { all:unset; display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; color:var(--ink-soft); cursor:pointer; border-radius:5px; vertical-align:middle; }
+.icon-btn:hover { color:var(--ink); background:rgba(255,255,255,0.06); }
+.icon-btn.confirm:hover { color:var(--accent); }
+.icon-btn.cancel:hover { color:var(--rose); }
+.discipline-row { border-top:1px solid rgba(255,255,255,0.06); padding:10px 4px; }
+.discipline-row:first-child { border-top:none; }
+.discipline-deactivated { opacity:0.45; filter:grayscale(1); }
 .archive-chevron { color:var(--ink-soft); font-size:12.5px; width:10px; flex-shrink:0; display:inline-block; }
 .archive-name { font-weight:400; font-size:12.5px; color:var(--ink); }
 .archive-value { color:var(--ink-soft); font-size:12.5px; }
