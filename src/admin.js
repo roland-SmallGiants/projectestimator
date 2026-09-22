@@ -399,7 +399,7 @@ export function renderDisciplinesAdmin() {
 
       const headerHtml = tasks.length ? `<table style="table-layout:fixed; width:100%; font-size:11px; margin-top:10px; margin-bottom:2px;">
         <tr>
-          <th style="width:280px; padding:0 8px 8px 22px;"></th>
+          <th style="width:302px; padding:0 8px 8px 22px;"></th>
           <th style="padding:0 8px 8px;"></th>
           ${rolesForThisDiscipline.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px; padding:0 8px 8px; color:var(--ink-soft); text-transform:uppercase; white-space:normal; line-height:1.3;">${isApplicable(r) ? esc(r.role) : ""}</th>`).join("")}
           <th style="width:30px;"></th>
@@ -415,9 +415,9 @@ export function renderDisciplinesAdmin() {
         // to-do section below \u2014 it no longer hides the hours.
         const headRow = `<table class="task-row-collapsed" data-item-id="${tid}" style="table-layout:fixed; width:100%; font-size:12.5px; border-top:1px solid rgba(255,255,255,0.06);">
           <tr>
-            <td style="width:280px; white-space:nowrap; padding:8px 8px 8px 4px;">
-              <span class="task-row-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer; padding-left:18px;">
-                <span class="sub" style="display:inline-block; width:12px; margin-left:-18px;">${taskOpen ? "\u25be" : "\u25b8"}</span>
+            <td style="width:302px; white-space:nowrap; padding:8px 8px 8px 26px;">
+              <span class="task-row-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                <span class="sub" style="display:inline-block; width:14px;">${taskOpen ? "\u25be" : "\u25b8"}</span>
                 <span>${esc(t.task)}</span>
               </span>
             </td>
@@ -453,7 +453,8 @@ export function renderDisciplinesAdmin() {
         return headRow + todoPanelHtml;
       }).join("") || `<div class="task-empty" style="padding-left:22px;">No tasks yet.</div>`;
 
-      return `<div style="background:rgba(255,186,48,0.04); margin-top:4px; padding-top:6px; padding-bottom:6px;">
+      return `<div style="position:relative; margin-top:4px; padding-top:6px; padding-bottom:6px;">
+      <div style="position:absolute; left:11px; top:0; bottom:10px; width:1px; background:var(--line);"></div>
       ${headerHtml}
       <div class="task-drag-list" data-disc-id="${id}">${taskRowsHtml}</div>
       <div class="row-actions">
