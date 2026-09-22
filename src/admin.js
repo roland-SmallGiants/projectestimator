@@ -399,9 +399,9 @@ export function renderDisciplinesAdmin() {
 
       const headerHtml = tasks.length ? `<table style="table-layout:fixed; width:100%; font-size:11px; margin-top:10px; margin-bottom:2px;">
         <tr>
-          <th style="width:30%; text-align:left; padding:0 8px 8px 22px; color:var(--ink-soft); text-transform:uppercase;">Default Estimated Hours</th>
+          <th style="width:30%; padding:0 8px 8px 22px;"></th>
           <th style="padding:0 8px 8px;"></th>
-          ${rolesForThisDiscipline.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px; padding:0 8px 8px; color:var(--ink-soft); text-transform:uppercase;">${isApplicable(r) ? esc(r.role) : ""}</th>`).join("")}
+          ${rolesForThisDiscipline.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px; padding:0 8px 8px; color:var(--ink-soft); text-transform:uppercase;"><span style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.3;">${isApplicable(r) ? esc(r.role) : ""}</span></th>`).join("")}
           <th style="width:30px;"></th>
         </tr>
       </table>` : "";
@@ -449,7 +449,7 @@ export function renderDisciplinesAdmin() {
           <button type="button" class="btn ghost small add-todo-btn" data-item-id="${tid}">+ Add to-do</button>
         </div>`;
 
-        const todoPanelHtml = `<div class="todo-panel" style="border-left:3px solid var(--accent); background:#242342; margin-left:22px;">${todoRowsHtml}${addTodoHtml}</div>`;
+        const todoPanelHtml = `<div class="todo-panel" style="border-left:3px solid var(--accent); background:#242342; margin-left:22px; width:calc(100% - 22px);">${todoRowsHtml}${addTodoHtml}</div>`;
 
         return headRow + todoPanelHtml;
       }).join("") || `<div class="task-empty" style="padding-left:22px;">No tasks yet.</div>`;
