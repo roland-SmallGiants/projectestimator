@@ -358,7 +358,7 @@ export function renderDisciplinesAdmin() {
   // width, so the columns line up consistently down the whole page. Roles that
   // don't apply to a given discipline still get a column; the cell is just disabled.
   const allRoles = Object.values(state.rateCard).filter((r) => r.role).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  const ROLE_COL_WIDTH = 90; // matches the Rate Card's Hourly Rate column for a page-wide consistent look
+  const ROLE_COL_WIDTH = 150; // matches the Rate Card's Hourly Rate column for a page-wide consistent look; verified via direct measurement to keep "Tracking Specialist (Sr.)" to exactly 2 lines
 
   if (reorderToggleWrap) {
     reorderToggleWrap.innerHTML = `<button type="button" class="btn ghost small ${state.disciplineReorderMode ? "primary" : ""}" id="disciplinesReorderToggleBtn">${state.disciplineReorderMode ? "\u21c5 Done reordering" : "\u21c5 Change order"}</button>`;
