@@ -11,7 +11,7 @@
 import { db } from "./firebase-init.js";
 import { state, CATEGORIES } from "./state.js";
 import { esc, moneyPlain, wireNumberStepper } from "./utils.js";
-import { openConfirm } from "./modals.js";
+import { openConfirm, openPrompt } from "./modals.js";
 
 // Plain SVG line icons (always monochrome, inherit currentColor) instead of
 // emoji characters, which render as full-color glyphs on most systems.
@@ -444,8 +444,7 @@ export function renderDisciplinesAdmin() {
           <button class="icon-btn cancel todo-del-btn" data-item-id="${tid}" data-todo-index="${ti}" title="Delete to-do">${ICON_DELETE}</button>
         </div>`).join("");
 
-        const addTodoHtml = `<div style="padding:6px 8px 10px 12px; display:flex; align-items:center; gap:8px;">
-          <input type="text" class="new-todo-input" data-item-id="${tid}" placeholder="New to-do" style="max-width:320px;">
+        const addTodoHtml = `<div style="padding:6px 8px 10px 12px;">
           <button type="button" class="btn ghost small add-todo-btn" data-item-id="${tid}">+ Add to-do</button>
         </div>`;
 
@@ -629,15 +628,13 @@ export function renderDisciplinesAdmin() {
       };
     });
     row.querySelectorAll(".add-todo-btn").forEach((btn) => {
-      btn.onclick = async () => {
+      btn.onclick = () => {
         const itemId = btn.dataset.itemId;
-        const input = row.querySelector(`.new-todo-input[data-item-id="${itemId}"]`);
-        const text = input.value.trim();
-        if (!text) return;
-        const t = state.taskCatalog[itemId];
-        const todos = [...(t && Array.isArray(t.todos) ? t.todos : []), text];
-        await db.collection("task_catalog").doc(itemId).update({ todos }).catch(() => {});
-        input.value = "";
+        openPrompt("Add a to-do", "New to-do", async (text) => {
+          const t = state.taskCatalog[itemId];
+          const todos = [...(t && Array.isArray(t.todos) ? t.todos : []), text];
+          await db.collection("task_catalog").doc(itemId).update({ todos }).catch(() => {});
+        });
       };
     });
     wireTodoDragAndDrop(row);
