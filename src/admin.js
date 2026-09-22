@@ -410,31 +410,30 @@ export function renderDisciplinesAdmin() {
         const todos = Array.isArray(t.todos) ? t.todos : [];
         const taskOpen = state.expandedAdminTasks.has(tid);
 
-        const headRow = `<div class="task-row-collapsed" data-item-id="${tid}" style="border-top:1px solid rgba(255,255,255,0.06); padding:8px 4px 8px 22px; display:flex; justify-content:space-between; align-items:center;">
-          <span class="task-row-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer; flex:1;">
-            <span class="sub" style="display:inline-block; width:12px;">${taskOpen ? "\u25be" : "\u25b8"}</span>
-            <span style="font-size:12.5px;">${esc(t.task)}</span>
-          </span>
-          <button class="icon-btn cancel disc-task-del" data-item-id="${tid}" title="Delete task">${ICON_DELETE}</button>
-        </div>`;
-
-        if (!taskOpen) return headRow;
-
-        const hoursRow = `<table style="table-layout:fixed; width:100%; font-size:12.5px;">
+        // Task name + hours are always visible together, in one row aligned
+        // to the standing header above. The chevron here only toggles the
+        // to-do section below \u2014 it no longer hides the hours.
+        const headRow = `<table class="task-row-collapsed" data-item-id="${tid}" style="table-layout:fixed; width:100%; font-size:12.5px; border-top:1px solid rgba(255,255,255,0.06);">
           <tr>
-            <td style="width:30%; padding:6px 8px 6px 22px;"></td>
-            <td style="padding:6px 8px;"></td>
+            <td style="width:30%; padding:8px 8px 8px 4px;">
+              <span class="task-row-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer; padding-left:18px;">
+                <span class="sub" style="display:inline-block; width:12px; margin-left:-18px;">${taskOpen ? "\u25be" : "\u25b8"}</span>
+                <span>${esc(t.task)}</span>
+              </span>
+            </td>
+            <td style="padding:8px;"></td>
             ${rolesForThisDiscipline.map((r) => {
               const applicable = isApplicable(r);
-              return `<td class="numc" style="width:${ROLE_COL_WIDTH}px; padding:6px 8px;">${applicable
+              return `<td class="numc" style="width:${ROLE_COL_WIDTH}px; padding:8px;">${applicable
                 ? `<input type="number" class="task-role-hours" data-item-id="${tid}" data-role="${esc(r.role)}" value="${getTaskHoursForRole(t, r.role)}" min="0" step="0.5">`
                 : `<span title="${esc(r.role)} doesn't apply to ${esc(d.name)}"></span>`}</td>`;
             }).join("")}
-            <td style="width:30px;"></td>
+            <td style="width:30px; padding:8px;"><button class="icon-btn cancel disc-task-del" data-item-id="${tid}" title="Delete task">${ICON_DELETE}</button></td>
           </tr>
         </table>`;
 
-        // Expanding a task now shows its to-dos directly \u2014 no separate toggle.
+        if (!taskOpen) return headRow;
+
         const todoRowsHtml = todos.map((todoText, ti) => `<div class="todo-row" draggable="true" data-item-id="${tid}" data-todo-index="${ti}" style="background:rgba(255,255,255,0.02); padding:5px 8px 5px 34px; display:flex; align-items:center; gap:8px;">
           <span class="sub todo-drag-handle" style="cursor:grab; user-select:none;">\u283f</span>
           <span class="sub todo-text-display" style="flex:1;" data-item-id="${tid}" data-todo-index="${ti}">${esc(todoText)}</span>
@@ -450,7 +449,7 @@ export function renderDisciplinesAdmin() {
           <button type="button" class="btn ghost small add-todo-btn" data-item-id="${tid}">+ Add to-do</button>
         </div>`;
 
-        return headRow + hoursRow + todoRowsHtml + addTodoHtml;
+        return headRow + todoRowsHtml + addTodoHtml;
       }).join("") || `<div class="task-empty" style="padding-left:22px;">No tasks yet.</div>`;
 
       return `${headerHtml}
