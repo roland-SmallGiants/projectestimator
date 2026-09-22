@@ -453,7 +453,8 @@ export function renderDisciplinesAdmin() {
         return headRow + todoPanelHtml;
       }).join("") || `<div class="task-empty" style="padding-left:22px;">No tasks yet.</div>`;
 
-      return `${headerHtml}
+      return `<div style="background:rgba(255,186,48,0.04); margin-top:4px; padding-top:6px; padding-bottom:6px;">
+      ${headerHtml}
       <div class="task-drag-list" data-disc-id="${id}">${taskRowsHtml}</div>
       <div class="row-actions">
         <button type="button" class="btn ghost small add-task-toggle-btn" data-disc-id="${id}">+ Add task</button>
@@ -461,6 +462,7 @@ export function renderDisciplinesAdmin() {
           <input type="text" class="new-task-name" placeholder="New task name" style="max-width:220px;">
           <button class="btn ghost small add-task-btn">Add</button>
         </span>
+      </div>
       </div>`;
     })();
 
