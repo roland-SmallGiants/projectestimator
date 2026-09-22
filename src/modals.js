@@ -65,6 +65,8 @@ export function closeConfirm() {
 // no extra click needed to reveal it.
 let pendingPromptAction = null;
 
+let pendingPromptSecondaryAction = null;
+
 export function ensurePromptModalRoot() {
   if (document.getElementById("genericPromptModalOverlay")) return;
   const div = document.createElement("div");
@@ -73,8 +75,9 @@ export function ensurePromptModalRoot() {
       <div class="modal-card">
         <h2 id="genericPromptTitle" style="margin-bottom:10px;">Add</h2>
         <input type="text" id="genericPromptInput" style="width:100%; margin-top:4px;">
-        <div class="row-actions" style="margin-top:18px;">
+        <div class="row-actions" style="margin-top:18px; flex-wrap:wrap;">
           <button class="btn ghost small" id="genericPromptCancel">Cancel</button>
+          <button class="btn ghost small" id="genericPromptSecondary" style="display:none;"></button>
           <button class="btn primary small" id="genericPromptConfirm">Add</button>
         </div>
       </div>
@@ -82,13 +85,13 @@ export function ensurePromptModalRoot() {
   document.body.appendChild(div.firstElementChild);
 
   document.getElementById("genericPromptCancel").onclick = closePrompt;
-  document.getElementById("genericPromptConfirm").onclick = async () => {
-    const action = pendingPromptAction;
+
+  const runAction = async (action, btnId) => {
     const input = document.getElementById("genericPromptInput");
     const value = input.value.trim();
     if (!value) { input.focus(); return; }
     if (!action) return closePrompt();
-    const btn = document.getElementById("genericPromptConfirm");
+    const btn = document.getElementById(btnId);
     const original = btn.textContent;
     btn.textContent = "Working\u2026";
     btn.disabled = true;
@@ -100,6 +103,9 @@ export function ensurePromptModalRoot() {
       closePrompt();
     }
   };
+
+  document.getElementById("genericPromptConfirm").onclick = () => runAction(pendingPromptAction, "genericPromptConfirm");
+  document.getElementById("genericPromptSecondary").onclick = () => runAction(pendingPromptSecondaryAction, "genericPromptSecondary");
   document.getElementById("genericPromptInput").addEventListener("keydown", (e) => {
     if (e.key === "Enter") document.getElementById("genericPromptConfirm").click();
     if (e.key === "Escape") closePrompt();
@@ -109,14 +115,25 @@ export function ensurePromptModalRoot() {
   });
 }
 
-export function openPrompt(title, placeholder, onConfirm, confirmLabel) {
+// options: { confirmLabel, secondaryLabel, onSecondary }. The secondary
+// button only shows when both secondaryLabel and onSecondary are given.
+export function openPrompt(title, placeholder, onConfirm, options) {
   ensurePromptModalRoot();
+  const opts = options || {};
   pendingPromptAction = onConfirm;
+  pendingPromptSecondaryAction = opts.onSecondary || null;
   document.getElementById("genericPromptTitle").textContent = title;
   const input = document.getElementById("genericPromptInput");
   input.value = "";
   input.placeholder = placeholder || "";
-  document.getElementById("genericPromptConfirm").textContent = confirmLabel || "Add";
+  document.getElementById("genericPromptConfirm").textContent = opts.confirmLabel || "Add";
+  const secondaryBtn = document.getElementById("genericPromptSecondary");
+  if (opts.secondaryLabel && opts.onSecondary) {
+    secondaryBtn.textContent = opts.secondaryLabel;
+    secondaryBtn.style.display = "";
+  } else {
+    secondaryBtn.style.display = "none";
+  }
   document.getElementById("genericPromptModalOverlay").style.display = "flex";
   setTimeout(() => input.focus(), 0);
 }

@@ -630,10 +630,21 @@ export function renderDisciplinesAdmin() {
     row.querySelectorAll(".add-todo-btn").forEach((btn) => {
       btn.onclick = () => {
         const itemId = btn.dataset.itemId;
-        openPrompt("Add a to-do", "New to-do", async (text) => {
+        const addTodo = async (text) => {
           const t = state.taskCatalog[itemId];
           const todos = [...(t && Array.isArray(t.todos) ? t.todos : []), text];
           await db.collection("task_catalog").doc(itemId).update({ todos }).catch(() => {});
+        };
+        openPrompt("Add a to-do", "New to-do", addTodo, {
+          confirmLabel: "Save",
+          secondaryLabel: "Save & reorder",
+          onSecondary: async (text) => {
+            await addTodo(text);
+            // Land the user right in this task's to-do list, ready to drag
+            // the new item into position with the existing drag-and-drop.
+            state.expandedAdminTasks.add(itemId);
+            renderDisciplinesAdmin();
+          },
         });
       };
     });
