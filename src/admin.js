@@ -399,7 +399,7 @@ export function renderDisciplinesAdmin() {
 
       const headerHtml = tasks.length ? `<table style="table-layout:fixed; width:100%; font-size:11px; margin-top:10px; margin-bottom:2px;">
         <tr>
-          <th style="width:302px; padding:0 8px 8px 22px;"></th>
+          <th style="width:280px; padding:0 8px 8px 12px;"></th>
           <th style="padding:0 8px 8px;"></th>
           ${rolesForThisDiscipline.map((r) => `<th class="numc" style="width:${ROLE_COL_WIDTH}px; padding:0 8px 8px; color:var(--ink-soft); text-transform:uppercase; white-space:normal; line-height:1.3;">${isApplicable(r) ? esc(r.role) : ""}</th>`).join("")}
           <th style="width:30px;"></th>
@@ -415,7 +415,7 @@ export function renderDisciplinesAdmin() {
         // to-do section below \u2014 it no longer hides the hours.
         const headRow = `<table class="task-row-collapsed" data-item-id="${tid}" style="table-layout:fixed; width:100%; font-size:12.5px; border-top:1px solid rgba(255,255,255,0.06);">
           <tr>
-            <td style="width:302px; white-space:nowrap; padding:8px 8px 8px 26px;">
+            <td style="width:280px; white-space:nowrap; padding:8px 8px 8px 12px;">
               <span class="task-row-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                 <span class="sub" style="display:inline-block; width:14px;">${taskOpen ? "\u25be" : "\u25b8"}</span>
                 <span>${esc(t.task)}</span>
@@ -448,12 +448,12 @@ export function renderDisciplinesAdmin() {
           <button type="button" class="btn ghost small add-todo-btn" data-item-id="${tid}">+ Add to-do</button>
         </div>`;
 
-        const todoPanelHtml = `<div class="todo-panel" style="border-left:3px solid var(--accent); background:#242342; margin-left:48px; width:calc(100% - 48px);">${todoRowsHtml}${addTodoHtml}</div>`;
+        const todoPanelHtml = `<div class="todo-panel" style="border-left:3px solid var(--accent); background:#2c2b52; margin-left:34px; width:calc(100% - 34px);">${todoRowsHtml}${addTodoHtml}</div>`;
 
         return headRow + todoPanelHtml;
-      }).join("") || `<div class="task-empty" style="padding-left:22px;">No tasks yet.</div>`;
+      }).join("") || `<div class="task-empty" style="padding-left:12px;">No tasks yet.</div>`;
 
-      return `<div style="margin-top:4px; padding-top:6px; padding-bottom:6px;">
+      return `<div style="border-left:3px solid var(--accent); background:#242342; margin-left:26px; width:calc(100% - 26px); margin-top:4px; padding-top:6px; padding-bottom:6px;">
       ${headerHtml}
       <div class="task-drag-list" data-disc-id="${id}">${taskRowsHtml}</div>
       <div class="row-actions">
@@ -469,8 +469,8 @@ export function renderDisciplinesAdmin() {
     return `<div class="discipline-row ${deactivated ? "discipline-deactivated" : ""}" data-id="${id}">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
         <span class="disc-collapse-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-          <span style="display:inline-block; width:14px; color:var(--ink-soft);">${isOpen ? "\u25be" : "\u25b8"}</span>
-          <span class="disc-name-display" style="font-size:13px; font-weight:400;">${esc(d.name)}</span>
+          <span style="display:inline-block; width:14px; color:${isOpen ? "var(--accent)" : "var(--ink-soft)"};">${isOpen ? "\u25be" : "\u25b8"}</span>
+          <span class="disc-name-display" style="font-size:13px; font-weight:${isOpen ? "700" : "400"}; color:${isOpen ? "var(--accent)" : "var(--ink)"};">${esc(d.name)}</span>
           <input type="text" class="disc-name-input" value="${esc(d.name)}" style="display:none; font-size:13px; font-weight:400; max-width:260px;">
           ${deactivated ? `<span class="sub" style="color:var(--rose);">Deactivated</span>` : ""}
         </span>
