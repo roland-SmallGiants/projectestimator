@@ -392,24 +392,10 @@ export function renderDisciplinesAdmin() {
     });
 
     const isOpen = state.expandedAdminDisciplines.has(id);
-    const taskReorderActive = state.taskReorderModeFor === id;
     const deactivated = Boolean(d.deactivated);
 
     const taskListHtml = (() => {
       if (!isOpen) return "";
-
-      if (taskReorderActive) {
-        return `<div class="row-actions" style="margin-top:10px;">
-          <span class="sub">Drag tasks to reorder, then confirm.</span>
-          <button type="button" class="btn ghost small primary task-reorder-done-btn" data-disc-id="${id}">\u21c5 Done reordering</button>
-        </div>
-        <div class="task-drag-list" data-disc-id="${id}">
-          ${tasks.map(([tid, t]) => `<div class="discipline-row task-drag-item" draggable="true" data-item-id="${tid}">
-            <span class="sub" style="cursor:grab; user-select:none; margin-right:8px;">\u283f</span>
-            <span style="font-size:12.5px;">${esc(t.task)}</span>
-          </div>`).join("") || `<div class="task-empty">No tasks yet.</div>`}
-        </div>`;
-      }
 
       const headerHtml = tasks.length ? `<table style="table-layout:fixed; width:100%; font-size:11px; margin-top:10px; margin-bottom:2px;">
         <tr>
@@ -422,7 +408,6 @@ export function renderDisciplinesAdmin() {
 
       const taskRowsHtml = tasks.map(([tid, t]) => {
         const todos = Array.isArray(t.todos) ? t.todos : [];
-        const todosOpen = state.expandedTaskTodos.has(tid);
         const taskOpen = state.expandedAdminTasks.has(tid);
 
         const headRow = `<div class="task-row-collapsed" data-item-id="${tid}" style="border-top:1px solid rgba(255,255,255,0.06); padding:8px 4px 8px 22px; display:flex; justify-content:space-between; align-items:center;">
@@ -449,12 +434,7 @@ export function renderDisciplinesAdmin() {
           </tr>
         </table>`;
 
-        const todoToggleRow = `<div style="padding:4px 4px 4px 22px;">
-          <button type="button" class="btn ghost small todo-toggle-btn" data-item-id="${tid}">${todos.length} to-do${todos.length === 1 ? "" : "s"} ${todosOpen ? "\u25be" : "\u25b8"}</button>
-        </div>`;
-
-        if (!todosOpen) return headRow + hoursRow + todoToggleRow;
-
+        // Expanding a task now shows its to-dos directly \u2014 no separate toggle.
         const todoRowsHtml = todos.map((todoText, ti) => `<div class="todo-row" draggable="true" data-item-id="${tid}" data-todo-index="${ti}" style="background:rgba(255,255,255,0.02); padding:5px 8px 5px 34px; display:flex; align-items:center; gap:8px;">
           <span class="sub todo-drag-handle" style="cursor:grab; user-select:none;">\u283f</span>
           <span class="sub todo-text-display" style="flex:1;" data-item-id="${tid}" data-todo-index="${ti}">${esc(todoText)}</span>
@@ -470,17 +450,17 @@ export function renderDisciplinesAdmin() {
           <button type="button" class="btn ghost small add-todo-btn" data-item-id="${tid}">+ Add to-do</button>
         </div>`;
 
-        return headRow + hoursRow + todoToggleRow + todoRowsHtml + addTodoHtml;
+        return headRow + hoursRow + todoRowsHtml + addTodoHtml;
       }).join("") || `<div class="task-empty" style="padding-left:22px;">No tasks yet.</div>`;
 
-      return `<div class="row-actions" style="margin-top:10px; margin-bottom:0;">
-        <button type="button" class="btn ghost small task-reorder-start-btn" data-disc-id="${id}">\u21c5 Change order</button>
-      </div>
-      ${headerHtml}
+      return `${headerHtml}
       <div class="task-drag-list" data-disc-id="${id}">${taskRowsHtml}</div>
       <div class="row-actions">
-        <input type="text" class="new-task-name" placeholder="New task name" style="max-width:220px;">
-        <button class="btn ghost small add-task-btn">+ Add</button>
+        <button type="button" class="btn ghost small add-task-toggle-btn" data-disc-id="${id}">+ Add task</button>
+        <span class="new-task-form" data-disc-id="${id}" style="display:none; gap:8px; align-items:center;">
+          <input type="text" class="new-task-name" placeholder="New task name" style="max-width:220px;">
+          <button class="btn ghost small add-task-btn">Add</button>
+        </span>
       </div>`;
     })();
 
@@ -553,21 +533,6 @@ export function renderDisciplinesAdmin() {
       db.collection("disciplines").doc(id).update({ deactivated: !currentlyDeactivated }).catch(() => {});
     };
 
-    const taskReorderStartBtn = row.querySelector(".task-reorder-start-btn");
-    if (taskReorderStartBtn) {
-      taskReorderStartBtn.onclick = () => {
-        state.taskReorderModeFor = taskReorderStartBtn.dataset.discId;
-        renderDisciplinesAdmin();
-      };
-    }
-    const taskReorderDoneBtn = row.querySelector(".task-reorder-done-btn");
-    if (taskReorderDoneBtn) {
-      taskReorderDoneBtn.onclick = () => {
-        state.taskReorderModeFor = null;
-        renderDisciplinesAdmin();
-      };
-    }
-
     row.querySelectorAll(".task-row-toggle").forEach((toggle) => {
       toggle.onclick = () => {
         const tid = toggle.closest(".task-row-collapsed").dataset.itemId;
@@ -609,14 +574,6 @@ export function renderDisciplinesAdmin() {
       };
     });
 
-    row.querySelectorAll(".todo-toggle-btn").forEach((btn) => {
-      btn.onclick = () => {
-        const itemId = btn.dataset.itemId;
-        if (state.expandedTaskTodos.has(itemId)) state.expandedTaskTodos.delete(itemId);
-        else state.expandedTaskTodos.add(itemId);
-        renderDisciplinesAdmin();
-      };
-    });
     row.querySelectorAll(".todo-edit-btn").forEach((btn) => {
       const { itemId, todoIndex } = btn.dataset;
       const display = row.querySelector(`.todo-text-display[data-item-id="${itemId}"][data-todo-index="${todoIndex}"]`);
@@ -683,7 +640,15 @@ export function renderDisciplinesAdmin() {
       };
     });
     wireTodoDragAndDrop(row);
-    if (taskReorderDoneBtn) wireTaskDragAndDrop(row.querySelector(".task-drag-list")); // only draggable while this discipline's task reorder mode is active
+    const addTaskToggleBtn = row.querySelector(".add-task-toggle-btn");
+    const newTaskForm = row.querySelector(".new-task-form");
+    if (addTaskToggleBtn && newTaskForm) {
+      addTaskToggleBtn.onclick = () => {
+        addTaskToggleBtn.style.display = "none";
+        newTaskForm.style.display = "inline-flex";
+        newTaskForm.querySelector(".new-task-name").focus();
+      };
+    }
     const addTaskBtn = row.querySelector(".add-task-btn");
     if (addTaskBtn) {
       addTaskBtn.onclick = async () => {
@@ -692,6 +657,10 @@ export function renderDisciplinesAdmin() {
         if (!name) return;
         await db.collection("task_catalog").add({ category: state.disciplines[id].name, task: name, hoursByRole: {} });
         input.value = "";
+        if (addTaskToggleBtn && newTaskForm) {
+          newTaskForm.style.display = "none";
+          addTaskToggleBtn.style.display = "";
+        }
       };
     }
   });
