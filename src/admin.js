@@ -355,7 +355,7 @@ export function renderDisciplinesAdmin() {
             const todosOpen = state.expandedTaskTodos.has(tid);
             const bodyColspan = rolesForThisDiscipline.length + 2; // task-name + spacer + role columns, everything except the delete column
             const taskRow = `<tr class="task-drag-item" draggable="true" data-item-id="${tid}">
-              <td><span class="sub" style="cursor:grab; user-select:none;">\u283f</span> ${esc(t.task)}<button type="button" class="btn ghost small todo-toggle-btn" data-item-id="${tid}" style="margin-left:8px;">${todos.length} to-do${todos.length === 1 ? "" : "s"} ${todosOpen ? "\u25be" : "\u25b8"}</button></td>
+              <td><span class="sub" style="cursor:grab; user-select:none;">\u283f</span> ${esc(t.task)}<button type="button" class="btn ghost small todo-toggle-btn" data-item-id="${tid}" style="display:inline-flex; vertical-align:middle; white-space:nowrap; margin-left:8px;">${todos.length} to-do${todos.length === 1 ? "" : "s"} ${todosOpen ? "\u25be" : "\u25b8"}</button></td>
               <td></td>
               ${rolesForThisDiscipline.map((r) => {
                 const applicable = isApplicable(r);
