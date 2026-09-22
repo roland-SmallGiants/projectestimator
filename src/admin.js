@@ -434,7 +434,7 @@ export function renderDisciplinesAdmin() {
 
         if (!taskOpen) return headRow;
 
-        const todoRowsHtml = todos.map((todoText, ti) => `<div class="todo-row" draggable="true" data-item-id="${tid}" data-todo-index="${ti}" style="background:rgba(255,255,255,0.02); padding:5px 8px 5px 34px; display:flex; align-items:center; gap:8px;">
+        const todoRowsHtml = todos.map((todoText, ti) => `<div class="todo-row" draggable="true" data-item-id="${tid}" data-todo-index="${ti}" style="padding:5px 8px 5px 12px; display:flex; align-items:center; gap:8px;">
           <span class="sub todo-drag-handle" style="cursor:grab; user-select:none;">\u283f</span>
           <span class="sub todo-text-display" style="flex:1;" data-item-id="${tid}" data-todo-index="${ti}">${esc(todoText)}</span>
           <input type="text" class="todo-text-input" value="${esc(todoText)}" data-item-id="${tid}" data-todo-index="${ti}" style="display:none; flex:1;">
@@ -444,12 +444,14 @@ export function renderDisciplinesAdmin() {
           <button class="icon-btn cancel todo-del-btn" data-item-id="${tid}" data-todo-index="${ti}" title="Delete to-do">${ICON_DELETE}</button>
         </div>`).join("");
 
-        const addTodoHtml = `<div style="background:rgba(255,255,255,0.02); padding:6px 8px 10px 34px; display:flex; align-items:center; gap:8px;">
+        const addTodoHtml = `<div style="padding:6px 8px 10px 12px; display:flex; align-items:center; gap:8px;">
           <input type="text" class="new-todo-input" data-item-id="${tid}" placeholder="New to-do" style="max-width:320px;">
           <button type="button" class="btn ghost small add-todo-btn" data-item-id="${tid}">+ Add to-do</button>
         </div>`;
 
-        return headRow + todoRowsHtml + addTodoHtml;
+        const todoPanelHtml = `<div class="todo-panel" style="border-left:3px solid var(--accent); background:#242342; margin-left:22px;">${todoRowsHtml}${addTodoHtml}</div>`;
+
+        return headRow + todoPanelHtml;
       }).join("") || `<div class="task-empty" style="padding-left:22px;">No tasks yet.</div>`;
 
       return `${headerHtml}
