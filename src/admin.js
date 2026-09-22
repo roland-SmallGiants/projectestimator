@@ -448,13 +448,12 @@ export function renderDisciplinesAdmin() {
           <button type="button" class="btn ghost small add-todo-btn" data-item-id="${tid}">+ Add to-do</button>
         </div>`;
 
-        const todoPanelHtml = `<div class="todo-panel" style="border-left:3px solid var(--accent); background:#242342; margin-left:22px; width:calc(100% - 22px);">${todoRowsHtml}${addTodoHtml}</div>`;
+        const todoPanelHtml = `<div class="todo-panel" style="border-left:3px solid var(--accent); background:#242342; margin-left:48px; width:calc(100% - 48px);">${todoRowsHtml}${addTodoHtml}</div>`;
 
         return headRow + todoPanelHtml;
       }).join("") || `<div class="task-empty" style="padding-left:22px;">No tasks yet.</div>`;
 
-      return `<div style="position:relative; margin-top:4px; padding-top:6px; padding-bottom:6px;">
-      <div style="position:absolute; left:11px; top:0; bottom:10px; width:1px; background:var(--line);"></div>
+      return `<div style="margin-top:4px; padding-top:6px; padding-bottom:6px;">
       ${headerHtml}
       <div class="task-drag-list" data-disc-id="${id}">${taskRowsHtml}</div>
       <div class="row-actions">
